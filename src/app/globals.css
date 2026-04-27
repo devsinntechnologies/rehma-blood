@@ -19,11 +19,12 @@
   --color-adm-accent-soft-fg: var(--adm-accent-soft-fg);
 }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Dark Theme (default) ── */
+:root,
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
 
-  /* BloodBridge Admin Variables (from user reference) */
   --adm-bg: #0a0a0a;
   --adm-surface: #111111;
   --adm-surface-2: #1a1a1a;
@@ -33,7 +34,7 @@
   --adm-fg-strong: #ffffff;
   --adm-fg-muted: #ffffffb3;
   --adm-fg-dim: #ffffff80;
-  --adm-fg-faint: #ffffff66;
+  --adm-fg-faint: #ffffff55;
   --adm-hover: #ffffff0d;
   --adm-accent: #dc2626;
   --adm-accent-fg: #ffffff;
@@ -42,12 +43,30 @@
   --adm-accent-soft-fg: #f87171;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Light Theme ── */
+[data-theme="light"] {
+  --background: #f5f5f5;
+  --foreground: #111111;
+
+  --adm-bg: #f0f0f0;
+  --adm-surface: #ffffff;
+  --adm-surface-2: #f5f5f5;
+  --adm-border: #00000015;
+  --adm-border-soft: #0000000a;
+  --adm-fg: #111111;
+  --adm-fg-strong: #000000;
+  --adm-fg-muted: #333333cc;
+  --adm-fg-dim: #55555599;
+  --adm-fg-faint: #88888888;
+  --adm-hover: #00000008;
+  --adm-accent: #dc2626;
+  --adm-accent-fg: #ffffff;
+  --adm-accent-soft-bg: #fee2e2;
+  --adm-accent-soft-border: #fecaca;
+  --adm-accent-soft-fg: #dc2626;
 }
+
+
 
 body {
   background-color: var(--adm-bg);
@@ -73,4 +92,125 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #3a3a3a;
+}
+
+/* Specific thicker scrollbar for Modals and List views */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--adm-surface-2);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--adm-border);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--adm-fg-dim);
+}
+
+/* ── Blood Group Badge (auto light/dark) ── */
+.blood-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ef4444;
+  background-color: #3f0f0f;
+  border: 1px solid #7f1d1d55;
+}
+
+[data-theme="light"] .blood-badge {
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-color: #fecaca;
+}
+
+/* ── Status Badges ── */
+.status-badge-active {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #052e16;
+  color: #4ade80;
+  border: 1px solid #14532d;
+}
+[data-theme="light"] .status-badge-active {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.status-badge-inactive {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #262626;
+  color: #a3a3a3;
+  border: 1px solid #404040;
+}
+[data-theme="light"] .status-badge-inactive {
+  background: #f5f5f5;
+  color: #737373;
+  border-color: #d4d4d4;
+}
+
+.status-badge-pending {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #422006;
+  color: #facc15;
+  border: 1px solid #713f12;
+}
+[data-theme="light"] .status-badge-pending {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.status-badge-completed {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #052e16;
+  color: #22c55e;
+  border: 1px solid #166534;
+}
+[data-theme="light"] .status-badge-completed {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.status-badge-verification {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #422006;
+  color: #f59e0b;
+  border: 1px solid #92400e;
+}
+[data-theme="light"] .status-badge-verification {
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fde68a;
 }

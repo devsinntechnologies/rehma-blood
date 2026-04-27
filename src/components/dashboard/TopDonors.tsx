@@ -17,13 +17,13 @@ export default function TopDonors() {
   return (
     <div className="flex flex-col rounded-xl border p-5 bg-[var(--adm-surface)] border-[color:var(--adm-border)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[var(--adm-fg)] font-medium">Top Donors</h3>
-        <span className="text-xs text-[var(--adm-fg-dim)]">By total donations</span>
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-[17px] font-semibold text-[var(--adm-fg)]">Top Donors</h3>
+        <span className="text-[12px] text-[var(--adm-fg-dim)]">By total donations</span>
       </div>
 
       {/* Donor list */}
-      <div className="space-y-4">
+      <div className="space-y-[26px]">
         {donors.map((donor) => (
           <div key={donor.rank} className="flex items-center gap-4">
             {/* Rank */}
@@ -32,20 +32,20 @@ export default function TopDonors() {
             </div>
 
             {/* Blood group badge */}
-            <div className="h-8 w-8 shrink-0 rounded bg-red-600/15 text-red-400 flex items-center justify-center text-xs font-medium">
+            <div className="blood-badge h-8 w-10 shrink-0 rounded text-[13px] font-bold">
               {donor.bloodGroup}
             </div>
 
             {/* Name + bar */}
-            <div className="flex-1 min-w-0 flex flex-col gap-2">
-              <div className="flex justify-between items-center text-[14px]">
-                <span className="text-[var(--adm-fg)] font-medium truncate">{donor.name}</span>
-                <span className="text-[var(--adm-fg-dim)] shrink-0 ml-2 text-xs">{donor.donations}</span>
+            <div className="flex-1 min-w-0 flex flex-col gap-[6px]">
+              <div className="flex justify-between items-center">
+                <span className="text-[15px] text-[var(--adm-fg)] font-semibold truncate leading-none">{donor.name}</span>
+                <span className="text-[var(--adm-fg-muted)] shrink-0 ml-2 text-[14px] leading-none">{donor.donations}</span>
               </div>
               {/* Progress bar */}
-              <div className="h-[2px] bg-[var(--adm-border-soft)] rounded-full overflow-hidden">
+              <div className="h-[6px] bg-[var(--adm-surface-2)] border border-[color:var(--adm-border)] rounded-[3px] overflow-hidden">
                 <div
-                  className="h-full bg-[#dc2626] transition-all duration-700 ease-out"
+                  className="h-full bg-[#dc2626] rounded-[3px] transition-all duration-700 ease-out shadow-[0_0_8px_rgba(220,38,38,0.3)]"
                   style={{ width: `${(donor.donations / maxDonations) * 100}%` }}
                 />
               </div>

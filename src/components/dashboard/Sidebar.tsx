@@ -20,13 +20,13 @@ import {
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Donors", href: "/donors", icon: Droplets },
-  { label: "Blood Requests", href: "/blood-requests", icon: HeartHandshake },
-  { label: "Live Map", href: "/live-map", icon: Map },
-  { label: "Donations", href: "/donations", icon: Users },
-  { label: "Messages", href: "/messages", icon: MessageSquare },
-  { label: "Sub-Admins", href: "/sub-admins", icon: ShieldCheck },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Donors", href: "/dashboard/donors", icon: Droplets },
+  { label: "Blood Requests", href: "/dashboard/blood-requests", icon: HeartHandshake },
+  { label: "Live Map", href: "/dashboard/live-map", icon: Map },
+  { label: "Donations", href: "/dashboard/donations", icon: Users },
+  { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+  { label: "Sub-Admins", href: "/dashboard/sub-admins", icon: ShieldCheck },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -34,7 +34,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const SidebarContent = () => (
-    <div className="w-64 shrink-0 border-r border-[color:var(--adm-border)] bg-[var(--adm-surface)] flex flex-col h-screen overflow-hidden">
+    <div className="w-64 shrink-0 border-r border-[color:var(--adm-border)] bg-[var(--adm-surface)] flex flex-col h-full overflow-hidden">
       {/* Logo Section */}
       <div className="px-5 py-5 flex items-center gap-3 border-b border-[color:var(--adm-border)]">
         <div className="flex-shrink-0 flex items-center justify-center w-10 h-10">
@@ -56,18 +56,20 @@ export default function Sidebar() {
       {/* Nav Items */}
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
         {navItems.map(({ label, href, icon: Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
+          const isActive = href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
               href={href}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all border ${isActive
-                ? "bg-[var(--adm-accent-soft-bg)] text-[var(--adm-accent-soft-fg)] border-[var(--adm-accent-soft-border)] font-medium"
-                : "text-[var(--adm-fg-dim)] border-transparent hover:bg-[var(--adm-hover)] hover:text-[var(--adm-fg)] font-normal"
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all border ${isActive
+                ? "bg-[var(--adm-accent-soft-bg)] text-[var(--adm-accent)] border-[var(--adm-accent-soft-border)] font-semibold shadow-sm"
+                : "text-[var(--adm-fg-dim)] border-transparent hover:bg-[var(--adm-hover)] hover:text-[var(--adm-fg)] font-medium"
                 }`}
             >
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className={isActive ? "text-[var(--adm-accent-soft-fg)]" : ""} />
+              <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className={isActive ? "text-[var(--adm-accent)]" : ""} />
               <span className="text-[14px]">{label}</span>
             </Link>
           );
@@ -85,10 +87,13 @@ export default function Sidebar() {
             <div className="text-xs text-[var(--adm-fg-dim)] truncate mt-0.5">Super Admin</div>
           </div>
         </div>
-        <button className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[var(--adm-fg-dim)] hover:bg-[var(--adm-hover)] hover:text-[var(--adm-fg)] transition-colors">
+        <Link 
+          href="/login"
+          className="mt-1 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[var(--adm-fg-dim)] hover:bg-[var(--adm-hover)] hover:text-[var(--adm-fg)] transition-colors"
+        >
           <LogOut size={16} strokeWidth={1.5} />
           <span className="text-sm">Sign out</span>
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -121,7 +126,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:flex shrink-0 h-full sticky top-0">
         <SidebarContent />
       </aside>
 
