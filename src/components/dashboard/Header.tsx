@@ -5,7 +5,7 @@ import { Search, Bell, Sun } from "lucide-react";
 
 export default function Header() {
   return (
-    <header className="h-16 shrink-0 border-b border-[color:var(--adm-border)] bg-[var(--adm-bg)] flex items-center justify-between px-6 z-10 sticky top-0">
+    <header className="h-16 shrink-0 border-b border-[color:var(--adm-border)] bg-[var(--adm-bg)] flex items-center justify-between px-6 sticky top-0 z-10">
       {/* Left side: Search */}
       <div className="flex-1 max-w-xl">
         <div className="relative flex items-center w-full">
