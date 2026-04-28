@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Donors", href: "/dashboard/donors", icon: Droplets },
-  { label: "Blood Requests", href: "/dashboard/blood-requests", icon: HeartHandshake },
-  { label: "Live Map", href: "/dashboard/live-map", icon: Map },
-  { label: "Donations", href: "/dashboard/donations", icon: Users },
-  { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { label: "Sub-Admins", href: "/dashboard/sub-admins", icon: ShieldCheck },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Donors", href: "/admin/donors", icon: Droplets },
+  { label: "Blood Requests", href: "/admin/blood-requests", icon: HeartHandshake },
+  { label: "Live Map", href: "/admin/map", icon: Map },
+  { label: "Donations", href: "/admin/donations", icon: Users },
+  { label: "Messages", href: "/admin/messages", icon: MessageSquare },
+  { label: "Sub-Admins", href: "/admin/sub-admins", icon: ShieldCheck },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -37,27 +37,34 @@ export default function Sidebar() {
     <div className="w-64 shrink-0 border-r border-[color:var(--adm-border)] bg-[var(--adm-surface)] flex flex-col h-full overflow-hidden">
       {/* Logo Section */}
       <div className="px-5 py-5 flex items-center gap-3 border-b border-[color:var(--adm-border)]">
-        <div className="flex-shrink-0 flex items-center justify-center w-10 h-10">
-          <Image
-            src="/logo.png"
-            alt="BloodBridge"
-            width={32}
-            height={32}
-            className="w-full h-full object-contain"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
+        <div className="flex-shrink-0 relative group">
+          {/* Logo glow effect */}
+          <div className="absolute inset-0 bg-red-600/20 blur-xl rounded-full scale-150 group-hover:bg-red-600/30 transition-all duration-500" />
+          
+          <div className="relative flex items-center justify-center w-11 h-11 bg-white rounded-xl shadow-[0_8px_16px_rgba(0,0,0,0.1)] overflow-hidden border border-white/20">
+            <Image
+              src="/logo.png"
+              alt="BloodBridge"
+              width={44}
+              height={44}
+              quality={100}
+              priority
+              className="w-full h-full object-contain p-1.5 drop-shadow-md"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
         </div>
         <div>
-          <div className="text-[var(--adm-fg)] text-sm font-semibold leading-tight">Blood Bridge</div>
-          <div className="text-[11px] text-[var(--adm-fg-dim)] mt-0.5">Admin Portal</div>
+          <div className="text-[var(--adm-fg)] text-sm font-bold tracking-tight leading-tight">Blood Bridge</div>
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-[var(--adm-fg-dim)] mt-0.5 opacity-80">Admin Portal</div>
         </div>
       </div>
 
       {/* Nav Items */}
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
         {navItems.map(({ label, href, icon: Icon }) => {
-          const isActive = href === "/dashboard"
-            ? pathname === "/dashboard"
+          const isActive = href === "/admin"
+            ? pathname === "/admin"
             : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
@@ -102,7 +109,7 @@ export default function Sidebar() {
     <>
       {/* Mobile toggle */}
       <button
-        className="lg:hidden fixed top-3.5 left-3.5 z-50 p-2 rounded-lg bg-[var(--adm-surface-2)] text-[var(--adm-fg)] border border-[color:var(--adm-border)]"
+        className="lg:hidden fixed top-2.5 left-3.5 z-50 p-2 rounded-lg bg-[var(--adm-surface-2)] text-[var(--adm-fg)] border border-[color:var(--adm-border)]"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label="Toggle menu"
       >

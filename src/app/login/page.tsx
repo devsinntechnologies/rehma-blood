@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 
@@ -14,60 +15,55 @@ export default function LoginPage() {
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => router.push('/dashboard'), 1000);
+    setTimeout(() => router.push('/admin'), 1000);
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-[#050505] flex items-center justify-center p-6 relative overflow-hidden font-sans">
 
-      {/* Animated background glow blobs */}
+      {/* Dynamic Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#ff0000] opacity-[0.04] blur-[120px]" />
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#ff0000] opacity-[0.04] blur-[120px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#ff0000] opacity-[0.02] blur-[160px]" />
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-red-600/10 blur-[120px] animate-pulse" />
+        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-red-600/10 blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] rounded-full bg-red-600/[0.03] blur-[150px]" />
       </div>
 
-      {/* Subtle grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-        }}
-      />
-
-      {/* Main Card */}
-      <div className="relative w-full max-w-[420px] z-10">
+      {/* Main Container */}
+      <div className="relative w-full max-w-[400px] z-10">
         
-        {/* Glassmorphism card */}
-        <div className="bg-[#0e0e0e]/90 backdrop-blur-xl border border-white/[0.06] rounded-[28px] p-8 md:p-10 shadow-[0_32px_64px_rgba(0,0,0,0.8)]">
+        {/* Back Glow Effect */}
+        <div className="absolute inset-0 bg-red-600/20 blur-[60px] rounded-[40px] opacity-50" />
+
+        {/* Premium Card */}
+        <div className="relative bg-[#0d0d0d]/80 backdrop-blur-3xl border border-white/10 rounded-[32px] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] overflow-hidden">
           
+          {/* Card Top Highlight */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+
           {/* Logo Area */}
-          <div className="flex flex-col items-center mb-8">
-            {/* Logo ring glow */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 rounded-[20px] bg-[#ff0000] blur-[24px] opacity-25" />
-              <div className="relative h-16 w-16 bg-white rounded-[18px] flex items-center justify-center shadow-xl overflow-hidden">
-                {/* Using a styled SVG as reliable logo fallback */}
-                <svg viewBox="0 0 48 48" width="40" height="40" fill="none">
-                  <path d="M24 42s-16-10-16-22a16 16 0 0 1 32 0c0 12-16 22-16 22z" fill="#ff0000"/>
-                  <path d="M24 26a6 6 0 1 0 0-12 6 6 0 0 0 0 12z" fill="white"/>
-                </svg>
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative group mb-5">
+              {/* Logo Shadow/Glow */}
+              <div className="absolute inset-0 bg-red-600/30 blur-2xl rounded-full scale-125 transition-all duration-700 group-hover:scale-150" />
+              
+              <div className="relative h-16 w-16 bg-white rounded-2xl flex items-center justify-center shadow-2xl border border-white/20 transform transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3 overflow-hidden">
+                <Image
+                  src="/logo.png"
+                  alt="Logo"
+                  width={48}
+                  height={48}
+                  className="object-contain p-1.5"
+                  priority
+                />
               </div>
             </div>
 
-            <h1 className="text-[26px] font-bold text-white tracking-tight mb-1.5">
-              Blood Bridge Admin
+            <h1 className="text-2xl font-extrabold text-white tracking-tight mb-1">
+              Blood Bridge <span className="text-red-500">Admin</span>
             </h1>
-            <p className="text-[13px] text-[#666666] font-medium">
-              Sign in to the admin portal
+            <p className="text-[12px] text-zinc-500 font-medium tracking-wide uppercase">
+              Premium Portal Access
             </p>
-          </div>
-
-          {/* Secure badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-7 bg-[#ffffff06] border border-white/[0.05] rounded-full py-2 px-4">
-            <ShieldCheck size={13} className="text-[#22c55e]" />
-            <span className="text-[11px] text-[#888888] font-medium">Secured & Encrypted Connection</span>
           </div>
 
           {/* Form */}
@@ -75,39 +71,41 @@ export default function LoginPage() {
             
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-[12px] font-semibold text-[#666666] tracking-wide uppercase ml-0.5">Email</label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#444444] pointer-events-none" />
+              <label className="text-[10px] font-bold text-zinc-500 tracking-[0.1em] uppercase ml-1">Email Address</label>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-red-600/5 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@rehma.org"
                   required
-                  className="w-full h-12 bg-[#141414] border border-white/[0.08] focus:border-white/[0.15] rounded-[14px] pl-10 pr-4 text-[14px] text-white placeholder:text-[#333333] focus:outline-none transition-all duration-200 focus:bg-[#161616]"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 focus:border-red-500/50 rounded-xl pl-11 pr-4 text-[14px] text-white placeholder:text-zinc-700 focus:outline-none transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-[12px] font-semibold text-[#666666] tracking-wide uppercase ml-0.5">Password</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#444444] pointer-events-none" />
+              <label className="text-[10px] font-bold text-zinc-500 tracking-[0.1em] uppercase ml-1">Secure Password</label>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-red-600/5 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-red-500 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full h-12 bg-[#141414] border border-white/[0.08] focus:border-white/[0.15] rounded-[14px] pl-10 pr-11 text-[14px] text-white placeholder:text-[#333333] focus:outline-none transition-all duration-200 focus:bg-[#161616]"
+                  className="w-full h-12 bg-zinc-900/50 border border-white/5 focus:border-red-500/50 rounded-xl pl-11 pr-11 text-[14px] text-white placeholder:text-zinc-700 focus:outline-none transition-all duration-300 backdrop-blur-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#444444] hover:text-[#888888] transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -117,41 +115,40 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="relative w-full h-12 rounded-[14px] font-bold text-[15px] text-white overflow-hidden transition-all duration-200 active:scale-[0.98] disabled:opacity-70 group"
-                style={{
-                  background: 'linear-gradient(135deg, #ff2222 0%, #cc0000 100%)',
-                  boxShadow: '0 4px 24px rgba(255, 0, 0, 0.25), 0 1px 0 rgba(255,255,255,0.1) inset',
-                }}
+                className="relative w-full h-12 rounded-xl font-bold text-sm text-white overflow-hidden transition-all duration-300 active:scale-95 disabled:opacity-50 group shadow-lg shadow-red-600/20"
               >
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Signing in...</span>
-                  </div>
-                ) : (
-                  'Sign in'
-                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-700" />
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                
+                <span className="relative flex items-center justify-center gap-2">
+                  {loading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    'Enter Portal'
+                  )}
+                </span>
               </button>
             </div>
           </form>
 
-          {/* Divider + Demo Info */}
-          <div className="mt-8 pt-6 border-t border-white/[0.05] text-center space-y-1.5">
-            <p className="text-[11px] text-[#444444]">
-              Demo: <span className="text-[#666666] font-medium">admin@rehma.org</span> = Super Admin
-            </p>
-            <p className="text-[11px] text-[#444444]">
-              Any other email = Sub-Admin
-            </p>
+          {/* Secure badge */}
+          <div className="mt-6 flex items-center justify-center gap-2 py-2 px-4 bg-white/[0.02] border border-white/[0.05] rounded-lg">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Secured Access Only</span>
           </div>
+
         </div>
 
-        {/* Bottom label */}
-        <p className="text-center text-[11px] text-[#333333] mt-5">
-          Blood Bridge © {new Date().getFullYear()} · All rights reserved
-        </p>
+        {/* Footer info */}
+        <div className="mt-8 text-center">
+          <p className="text-[11px] text-zinc-600 font-medium tracking-tight">
+            Blood Bridge © {new Date().getFullYear()} · All rights reserved
+          </p>
+        </div>
       </div>
     </div>
   );

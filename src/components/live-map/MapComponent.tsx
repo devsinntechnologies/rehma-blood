@@ -8,24 +8,51 @@ import { useTheme } from '@/context/ThemeContext';
 
 // Define the custom icon creator
 const createCustomIcon = (color: string, label: string) => {
-  const fontSize = label.length <= 2 ? '12' : label.length === 3 ? '10' : '8.5';
+  const fontSize = label.length <= 2 ? '14' : label.length === 3 ? '12' : '11';
   return L.divIcon({
     className: '',
     html: `
-      <div style="position:relative; width: 42px; height: 52px; display: flex; justify-content: center; align-items: flex-start; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));">
-        <svg viewBox="0 0 42 52" width="42" height="52" style="overflow:visible; position:absolute; top:0; left:0;">
-          <circle cx="21" cy="19" r="17" fill="${color}" stroke="#ffffff" stroke-width="3.5"/>
-          <rect x="14" y="32" width="14" height="5" fill="${color}"/>
-          <polygon points="14,33 28,33 21,48" fill="${color}"/>
-        </svg>
-        <div style="position:absolute; top:10px; left:0; right:0; text-align:center; color:#ffffff; font-size:${fontSize}px; font-weight:900; letter-spacing:-0.3px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <div style="position:relative; width: 44px; height: 54px; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">
+        <div style="
+          width: 38px; 
+          height: 38px; 
+          background-color: ${color}; 
+          border: 3.5px solid #ffffff; 
+          border-radius: 50%; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+          color: #ffffff;
+          font-family: Inter, system-ui, sans-serif;
+          font-size: ${fontSize}px;
+          font-weight: 800;
+          box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        ">
           ${label}
         </div>
+        <div style="
+          width: 0; 
+          height: 0; 
+          border-left: 7px solid transparent;
+          border-right: 7px solid transparent;
+          border-top: 10px solid #ffffff;
+          margin-top: -2px;
+          filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+        "></div>
+        <div style="
+          width: 0; 
+          height: 0; 
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 8px solid ${color};
+          margin-top: -11px;
+          z-index: 1;
+        "></div>
       </div>
     `,
-    iconSize: [42, 52],
-    iconAnchor: [21, 48],
-    popupAnchor: [0, -48],
+    iconSize: [44, 54],
+    iconAnchor: [22, 46],
+    popupAnchor: [0, -46],
   });
 };
 
@@ -43,18 +70,18 @@ const markers = [
 
 export default function MapComponent() {
   const { theme } = useTheme();
-  
+
   if (typeof window === 'undefined') return null;
 
-  const tileUrl = theme === 'dark' 
+  const tileUrl = theme === 'dark'
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] transition-colors">
-      <MapContainer 
-        center={[30.3753, 69.3451]} 
-        zoom={5} 
+      <MapContainer
+        center={[30.3753, 69.3451]}
+        zoom={5}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%', background: theme === 'dark' ? '#0a0a0a' : '#f0f0f0' }}
         zoomControl={false}
@@ -65,10 +92,10 @@ export default function MapComponent() {
           url={tileUrl}
           subdomains={['a', 'b', 'c', 'd']}
         />
-        
+
         {markers.map((marker) => (
-          <Marker 
-            key={marker.id} 
+          <Marker
+            key={marker.id}
             position={marker.pos}
             icon={createCustomIcon(marker.color, marker.label)}
           >
