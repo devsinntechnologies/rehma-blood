@@ -3,7 +3,14 @@
 import React, { useState } from "react";
 import { Eye, Loader2, LocateFixed, Phone } from "lucide-react";
 import DonorDetailsDialog from "@/components/donors/DonorDetailsDialog";
-import DonorLocationModal from "@/components/donors/DonorLocationModal";
+import dynamic from "next/dynamic";
+
+// `DonorLocationModal` imports `leaflet` which references browser globals.
+// Load it dynamically with `ssr: false` so the server build won't evaluate it.
+const DonorLocationModal = dynamic(
+  () => import("@/components/donors/DonorLocationModal"),
+  { ssr: false }
+);
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearSelectedDonorDetails, fetchDonorById, type Donor } from "@/store/donorsSlice";
 
