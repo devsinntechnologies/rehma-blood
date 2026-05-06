@@ -1,12 +1,20 @@
 import React from 'react';
+import type { Donation } from '@/store/donationsSlice';
 
-const stats = [
-  { label: 'Total Donations', value: '6' },
-  { label: 'Total Units', value: '8' },
-  { label: 'Active Donors', value: '10' },
-];
+type DonationsStatsProps = {
+  donations: Donation[];
+};
 
-export default function DonationsStats() {
+export default function DonationsStats({ donations }: DonationsStatsProps) {
+  const completed = donations.filter((item) => item.status.toLowerCase() === 'completed').length;
+  const verification = donations.filter((item) => item.status.toLowerCase() === 'verification').length;
+
+  const stats = [
+    { label: 'Total Donations', value: donations.length },
+    { label: 'Completed', value: completed },
+    { label: 'Verification', value: verification },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {stats.map((stat) => (

@@ -55,8 +55,8 @@ export default function DonationsChart() {
       </div>
 
       {/* Chart */}
-      <div className="w-full flex-1 min-h-[260px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full flex-1 min-h-[260px] min-w-0">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
           <LineChart data={data} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--adm-border-soft)" vertical={false} />
             <XAxis

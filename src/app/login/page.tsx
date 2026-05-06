@@ -1,21 +1,35 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { loginAdmin } from '@/store/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { accessToken, status, error } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const loading = status === 'loading';
 
-  const handleSignIn = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (accessToken) {
+      router.replace('/admin');
+    }
+  }, [accessToken, router]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => router.push('/admin'), 1000);
+
+    const result = await dispatch(loginAdmin({ email, password }));
+
+    if (loginAdmin.fulfilled.match(result)) {
+      router.replace('/admin');
+    }
   };
 
   return (
@@ -133,6 +147,12 @@ export default function LoginPage() {
                 </span>
               </button>
             </div>
+
+            {error && (
+              <p className="text-[12px] text-red-400 font-medium leading-relaxed">
+                {error}
+              </p>
+            )}
           </form>
 
           {/* Secure badge */}

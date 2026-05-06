@@ -1,72 +1,147 @@
-import React from 'react';
-import { MapPin, Phone } from 'lucide-react';
+"use client";
 
-const donors = [
-  { id: "D001", name: "Ali Raza", bloodGroup: "O+", location: "Karachi", contact: "+92 300 1234567", donations: 8, lastDonation: "2026-02-14", status: "Active" },
-  { id: "D002", name: "Fatima Noor", bloodGroup: "A-", location: "Lahore", contact: "+92 301 2345678", donations: 4, lastDonation: "2026-03-20", status: "Active" },
-  { id: "D003", name: "Hamza Tariq", bloodGroup: "B+", location: "Islamabad", contact: "+92 302 3456789", donations: 12, lastDonation: "2025-11-08", status: "Active" },
-  { id: "D004", name: "Zainab Khan", bloodGroup: "AB+", location: "Karachi", contact: "+92 303 4567890", donations: 3, lastDonation: "2026-01-02", status: "Inactive" },
-  { id: "D005", name: "Omar Sheikh", bloodGroup: "O-", location: "Multan", contact: "+92 304 5678901", donations: 6, lastDonation: "2026-04-01", status: "Active" },
-  { id: "D006", name: "Ayesha Malik", bloodGroup: "A+", location: "Faisalabad", contact: "+92 305 6789012", donations: 0, lastDonation: "-", status: "Pending" },
-  { id: "D007", name: "Bilal Qureshi", bloodGroup: "B-", location: "Peshawar", contact: "+92 306 7890123", donations: 9, lastDonation: "2025-09-15", status: "Active" },
-  { id: "D008", name: "Sana Iqbal", bloodGroup: "O+", location: "Karachi", contact: "+92 307 8901234", donations: 2, lastDonation: "2026-04-10", status: "Active" },
-  { id: "D009", name: "Usman Farooq", bloodGroup: "A+", location: "Lahore", contact: "+92 308 9012345", donations: 5, lastDonation: "2026-03-05", status: "Active" },
-  { id: "D010", name: "Rida Hussain", bloodGroup: "O-", location: "Islamabad", contact: "+92 309 0123456", donations: 7, lastDonation: "2026-02-20", status: "Active" },
-  { id: "D011", name: "Tariq Mehmood", bloodGroup: "B+", location: "Karachi", contact: "+92 310 1234567", donations: 11, lastDonation: "2026-01-15", status: "Active" },
-  { id: "D012", name: "Sara Ahmed", bloodGroup: "AB-", location: "Rawalpindi", contact: "+92 311 2345678", donations: 3, lastDonation: "2026-03-28", status: "Active" },
-];
+import React, { useState } from "react";
+import { Eye, Loader2, LocateFixed, Phone } from "lucide-react";
+import DonorDetailsDialog from "@/components/donors/DonorDetailsDialog";
+import DonorLocationModal from "@/components/donors/DonorLocationModal";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { clearSelectedDonorDetails, fetchDonorById, type Donor } from "@/store/donorsSlice";
 
-export default function DonorsTable() {
+type DonorsTableProps = {
+  donors: Donor[];
+  status: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
+};
+
+export default function DonorsTable({ donors, status, error }: DonorsTableProps) {
+  const dispatch = useAppDispatch();
+  const selectedDonorDetails = useAppSelector((state) => state.donors.selectedDonor);
+  const selectedStatus = useAppSelector((state) => state.donors.selectedStatus);
+  const selectedError = useAppSelector((state) => state.donors.selectedError);
+
+  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+  const rows = donors.map((donor) => ({
+    ...donor,
+  }));
+
+  const handleOpenDetails = (donorId: number) => {
+    setIsDetailsOpen(true);
+    dispatch(fetchDonorById(donorId));
+  };
+
+  const handleDetailsDialogChange = (open: boolean) => {
+    setIsDetailsOpen(open);
+    if (!open) {
+      dispatch(clearSelectedDonorDetails());
+    }
+  };
+
   return (
-    <div className="bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-[color:var(--adm-border)]">
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">ID</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Donor</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Blood Group</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Location</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Contact</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Donations</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Last Donation</th>
-              <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[color:var(--adm-border)]">
-            {donors.map((donor) => (
-              <tr key={donor.id} className="hover:bg-[var(--adm-hover)] transition-colors group">
-                <td className="px-5 py-[14px] text-[13px] font-medium text-[var(--adm-fg-faint)] whitespace-nowrap">{donor.id}</td>
-                <td className="px-5 py-[14px] text-[14px] font-semibold text-[var(--adm-fg)] whitespace-nowrap">{donor.name}</td>
-                <td className="px-5 py-[14px] whitespace-nowrap">
-                  <div className="blood-badge h-8 min-w-[32px] px-1.5">
-                    {donor.bloodGroup}
-                  </div>
-                </td>
-                <td className="px-5 py-[14px] whitespace-nowrap">
-                  <div className="flex items-center gap-1.5 text-[13px] text-[var(--adm-fg-dim)]">
-                    <MapPin size={14} className="text-[var(--adm-fg-faint)]" />
-                    {donor.location}
-                  </div>
-                </td>
-                <td className="px-5 py-[14px] whitespace-nowrap">
-                  <div className="flex items-center gap-1.5 text-[13px] text-[var(--adm-fg-dim)]">
-                    <Phone size={14} className="text-[var(--adm-fg-faint)]" />
-                    {donor.contact}
-                  </div>
-                </td>
-                <td className="px-5 py-[14px] text-[14px] font-medium text-[var(--adm-fg)] whitespace-nowrap">{donor.donations}</td>
-                <td className="px-5 py-[14px] text-[13px] font-medium text-[var(--adm-fg-dim)] whitespace-nowrap">{donor.lastDonation}</td>
-                <td className="px-5 py-[14px] whitespace-nowrap">
-                  {donor.status === 'Active' && <span className="status-badge-active">Active</span>}
-                  {donor.status === 'Inactive' && <span className="status-badge-inactive">Inactive</span>}
-                  {donor.status === 'Pending' && <span className="status-badge-pending">Pending</span>}
-                </td>
+    <>
+      <div className="bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[color:var(--adm-border)]">
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">ID</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Donor</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Blood Group</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Contact</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Status</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Availability</th>
+                <th className="px-5 py-4 text-xs font-semibold text-[var(--adm-fg-dim)] whitespace-nowrap">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[color:var(--adm-border)]">
+              {rows.map((donor) => (
+                <tr key={donor.id} className="hover:bg-[var(--adm-hover)] transition-colors group">
+                  <td className="px-5 py-[14px] text-[13px] font-medium text-[var(--adm-fg-faint)] whitespace-nowrap">#{donor.id}</td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[14px] font-semibold text-[var(--adm-fg)]">{donor.fullName}</span>
+                      <span className="text-[12px] text-[var(--adm-fg-dim)]">{donor.email}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    <div className="blood-badge h-8 min-w-[32px] px-1.5">
+                      {donor.bloodGroup}
+                    </div>
+                  </td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-[13px] text-[var(--adm-fg-dim)]">
+                      <Phone size={14} className="text-[var(--adm-fg-faint)]" />
+                      {donor.phone}
+                    </div>
+                  </td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    {donor.isActive ? (
+                      <span className="status-badge-active">Active</span>
+                    ) : (
+                      <span className="status-badge-inactive">Inactive</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    {donor.isAvailable ? (
+                      <span className="status-badge-active">Available</span>
+                    ) : (
+                      <span className="status-badge-inactive">Unavailable</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-[14px] whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetails(donor.id)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] px-3 py-2 text-[13px] font-semibold text-[var(--adm-fg)] transition-all hover:bg-[var(--adm-hover)]"
+                      >
+                        <Eye size={14} />
+                        See Details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDonor(donor)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] px-3 py-2 text-[13px] font-semibold text-[var(--adm-fg)] transition-all hover:bg-[var(--adm-hover)]"
+                      >
+                        <LocateFixed size={14} />
+                        See Location
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {status === "loading" && (
+          <div className="flex items-center justify-center gap-2 border-t border-[color:var(--adm-border)] px-5 py-4 text-[13px] text-[var(--adm-fg-dim)]">
+            <Loader2 size={14} className="animate-spin" /> Loading donors...
+          </div>
+        )}
+
+        {status === "failed" && error && (
+          <div className="border-t border-[color:var(--adm-border)] px-5 py-4 text-[13px] text-red-400">
+            {error}
+          </div>
+        )}
+
+        {status === "succeeded" && donors.length === 0 && (
+          <div className="border-t border-[color:var(--adm-border)] px-5 py-8 text-center text-[13px] text-[var(--adm-fg-dim)]">
+            No donors found.
+          </div>
+        )}
       </div>
-    </div>
+
+      <DonorLocationModal donor={selectedDonor} onClose={() => setSelectedDonor(null)} />
+      <DonorDetailsDialog
+        open={isDetailsOpen}
+        onOpenChange={handleDetailsDialogChange}
+        donor={selectedDonorDetails}
+        status={selectedStatus}
+        error={selectedError}
+      />
+    </>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, Sun, Moon } from "lucide-react";
+import { Search, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import NotificationsMenu from "@/components/dashboard/NotificationsMenu";
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
@@ -42,13 +43,8 @@ export default function Header() {
           )}
         </button>
 
-        {/* Notifications Bell */}
-        <button className="relative p-2 rounded-lg text-[var(--adm-fg-dim)] hover:text-[var(--adm-fg)] hover:bg-[var(--adm-hover)] transition-all duration-200">
-          <Bell size={18} strokeWidth={1.8} />
-          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#dc2626] text-[9px] font-bold text-white">
-            3
-          </span>
-        </button>
+        {/* Notifications */}
+        <NotificationsMenu />
 
       </div>
     </header>

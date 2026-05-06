@@ -3,7 +3,8 @@
 import React from 'react';
 import { Search, ChevronDown, Filter } from 'lucide-react';
 
-export default function DonorsFilter() {
+export default function DonorsFilter({ count }: { count: number }) {
+
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-3 bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-2xl p-4 shadow-sm transition-colors">
       <div className="relative flex-1 max-w-[320px]">
@@ -38,7 +39,7 @@ export default function DonorsFilter() {
       <div className="flex-1" />
 
       <div className="text-[13px] font-bold text-[var(--adm-fg-dim)] bg-[var(--adm-surface-2)] border border-[color:var(--adm-border)] px-4 py-2 rounded-xl shadow-sm">
-        12 donors
+        {count} donors
       </div>
     </div>
   );

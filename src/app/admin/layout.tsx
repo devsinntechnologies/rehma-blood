@@ -1,9 +1,23 @@
+"use client";
+
+import { useEffect, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ThemeProvider } from "@/context/ThemeContext";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Header from "@/components/dashboard/Header";
-import type { ReactNode } from "react";
+import { useAppSelector } from "@/store/hooks";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const accessToken = useAppSelector((state) => state.auth.accessToken);
+
+  useEffect(() => {
+    if (!accessToken) {
+      router.replace("/login");
+    }
+  }, [accessToken, router]);
+
+
   return (
     <ThemeProvider>
       <div className="flex h-[100dvh] w-full bg-[var(--adm-bg)] text-[var(--adm-fg)] overflow-hidden">

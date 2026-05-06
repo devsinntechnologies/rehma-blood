@@ -49,8 +49,8 @@ export default function BloodGroupChart() {
       </h3>
 
       {/* Chart */}
-      <div className="flex-1 w-full min-h-[260px] flex items-center justify-center">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 w-full min-h-[260px] flex items-center justify-center min-w-0">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
           <PieChart>
             <Pie
               data={data}

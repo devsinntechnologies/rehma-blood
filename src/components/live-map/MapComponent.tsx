@@ -1,10 +1,11 @@
 "use client"
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useTheme } from '@/context/ThemeContext';
+import { useMapOverview } from '@/hooks/useMapOverview';
 
 // Define the custom icon creator
 const createCustomIcon = (color: string, label: string) => {
@@ -56,20 +57,28 @@ const createCustomIcon = (color: string, label: string) => {
   });
 };
 
-const markers = [
-  { id: 1, pos: [33.6844, 73.0479] as [number, number], label: 'O-', type: 'donor', color: '#16a34a' },
-  { id: 2, pos: [31.5204, 74.3587] as [number, number], label: 'A+', type: 'donor', color: '#16a34a' },
-  { id: 3, pos: [34.0151, 71.5249] as [number, number], label: 'B-', type: 'donor', color: '#16a34a' },
-  { id: 4, pos: [34.1986, 73.2327] as [number, number], label: 'AB-', type: 'donor', color: '#16a34a' },
-  { id: 5, pos: [33.9755, 72.7441] as [number, number], label: 'O+', type: 'donor', color: '#16a34a' },
-  { id: 6, pos: [31.4181, 73.0776] as [number, number], label: 'A+', type: 'high_priority', color: '#ea580c' },
-  { id: 7, pos: [30.1575, 71.5249] as [number, number], label: 'O+', type: 'critical', color: '#dc2626' },
-  { id: 8, pos: [24.8607, 67.0011] as [number, number], label: 'A-', type: 'normal', color: '#3b82f6' },
-  { id: 9, pos: [31.5546, 74.3572] as [number, number], label: 'B+', type: 'donor', color: '#16a34a' },
-];
+// Blood group color mapping
+const BLOOD_GROUP_COLORS: Record<string, string> = {
+  'A+': '#16a34a',
+  'A-': '#16a34a',
+  'B+': '#16a34a',
+  'B-': '#16a34a',
+  'O+': '#16a34a',
+  'O-': '#16a34a',
+  'AB+': '#16a34a',
+  'AB-': '#16a34a',
+};
+
+// Request urgency color mapping
+const URGENCY_COLORS: Record<string, string> = {
+  'critical': '#dc2626',
+  'high': '#ea580c',
+  'normal': '#3b82f6',
+};
 
 export default function MapComponent() {
   const { theme } = useTheme();
+  const { donors, requests, currentLocation, status, geolocationError } = useMapOverview();
 
   if (typeof window === 'undefined') return null;
 
@@ -77,11 +86,52 @@ export default function MapComponent() {
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
+  // Create markers from API data
+  const markers = useMemo(() => {
+    const donorMarkers = (donors ?? []).map((donor) => ({
+      id: `donor-${donor.id}`,
+      pos: [donor.latitude ?? 0, donor.longitude ?? 0] as [number, number],
+      label: donor.bloodGroup,
+      type: 'donor' as const,
+      color: BLOOD_GROUP_COLORS[donor.bloodGroup] || '#16a34a',
+      donor,
+    }));
+
+    const requestMarkers = (requests ?? []).map((request) => ({
+      id: `request-${request.id}`,
+      pos: [request.latitude ?? 0, request.longitude ?? 0] as [number, number],
+      label: request.bloodGroup,
+      type: 'request' as const,
+      color: URGENCY_COLORS[request.urgency.toLowerCase()] || '#3b82f6',
+      request,
+    }));
+
+    return [...donorMarkers, ...requestMarkers];
+  }, [donors, requests]);
+
+  const mapCenter: [number, number] = currentLocation.latitude && currentLocation.longitude
+    ? [currentLocation.latitude, currentLocation.longitude]
+    : [30.3753, 69.3451];
+
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] transition-colors">
+    <div className="w-full h-full rounded-xl overflow-hidden border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] transition-colors relative">
+      {/* Loading indicator */}
+      {status === 'loading' && (
+        <div className="absolute top-4 left-4 z-[1000] bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-lg px-4 py-2 text-sm text-[var(--adm-fg)]">
+          Loading nearby donors and requests...
+        </div>
+      )}
+
+      {/* Geolocation error */}
+      {geolocationError && (
+        <div className="absolute top-4 left-4 z-[1000] bg-red-900/80 border border-red-700 rounded-lg px-4 py-2 text-sm text-red-100 max-w-sm">
+          {geolocationError}
+        </div>
+      )}
+
       <MapContainer
-        center={[30.3753, 69.3451]}
-        zoom={5}
+        center={mapCenter}
+        zoom={12}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%', background: theme === 'dark' ? '#0a0a0a' : '#f0f0f0' }}
         zoomControl={false}
@@ -100,9 +150,39 @@ export default function MapComponent() {
             icon={createCustomIcon(marker.color, marker.label)}
           >
             <Popup className="custom-popup">
-              <div className="p-1">
-                <span className="font-bold">{marker.label}</span>
-                <span className="text-gray-500 text-sm block capitalize">{marker.type.replace('_', ' ')}</span>
+              <div className="p-2 text-sm">
+                {marker.type === 'donor' ? (
+                  <>
+                    <div className="font-bold text-[var(--adm-fg)]">{marker.donor.fullName}</div>
+                    <div className="text-[var(--adm-fg-dim)] text-xs">{marker.donor.city}</div>
+                    <div className="text-xs text-[var(--adm-fg)] mt-1">
+                      Blood: <span className="font-semibold">{marker.label}</span>
+                    </div>
+                    <div className="text-xs text-[var(--adm-fg-dim)]">
+                      Distance: {marker.donor.distanceKm?.toFixed(1) || 0} km
+                    </div>
+                    <div className="text-xs text-[var(--adm-fg-dim)]">
+                      Available: {marker.donor.availabilityStatus}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-bold text-[var(--adm-fg)]">{marker.request.requesterName}</div>
+                    <div className="text-xs text-[var(--adm-fg)] mt-1">
+                      Blood: <span className="font-semibold">{marker.label}</span>
+                    </div>
+                    <div className="text-xs text-[var(--adm-fg)] mt-1">
+                      Units: {marker.request.requiredUnits}
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 ${
+                      marker.request.urgency.toLowerCase() === 'critical' ? 'text-red-500' :
+                      marker.request.urgency.toLowerCase() === 'high' ? 'text-orange-500' :
+                      'text-blue-500'
+                    }`}>
+                      {marker.request.urgency}
+                    </div>
+                  </>
+                )}
               </div>
             </Popup>
           </Marker>
