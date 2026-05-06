@@ -4,6 +4,7 @@ import LiveMapFilters from '@/components/live-map/LiveMapFilters';
 import LiveMapContainer from '@/components/live-map/LiveMapContainer';
 
 export default function LiveMapPage() {
+
   return (
     <div className="flex flex-col gap-6 h-full">
       <LiveMapHeader />
