@@ -95,7 +95,7 @@ const getConversationLabel = (conversation: ChatConversation, adminId: number | 
 };
 
 const getConversationMeta = (conversation: ChatConversation) => {
-  const parts = [conversation.type];
+  const parts: string[] = [conversation.type];
 
   if (conversation.contextType) {
     parts.push(conversation.contextType);
