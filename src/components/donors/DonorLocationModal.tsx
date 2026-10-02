@@ -2,8 +2,9 @@
 
 import React from "react";
 import { X, MapPin, Mail, Droplets, BadgeCheck } from "lucide-react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import BaseTileLayer from "@/components/live-map/BaseTileLayer";
 import L from "leaflet";
 import { useTheme } from "@/context/ThemeContext";
 import type { Donor } from "@/store/donorsSlice";
@@ -26,9 +27,6 @@ export default function DonorLocationModal({ donor, onClose }: { donor: Donor | 
     return null;
   }
 
-  const tileUrl = theme === "dark"
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -106,11 +104,7 @@ export default function DonorLocationModal({ donor, onClose }: { donor: Donor | 
                 style={{ height: "100%", width: "100%", background: theme === "dark" ? "#0a0a0a" : "#f0f0f0" }}
                 zoomControl={true}
               >
-                <TileLayer
-                  attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-                  url={tileUrl}
-                  subdomains={['a', 'b', 'c', 'd']}
-                />
+                <BaseTileLayer dark={theme === "dark"} />
                 <Marker
                   position={[donor.latitude, donor.longitude]}
                   icon={createDonorIcon("#dc2626")}

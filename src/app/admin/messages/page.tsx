@@ -391,12 +391,13 @@ export default function MessagesPage() {
       setUnreadCount(payload.unreadCount ?? 0);
     });
 
-    socket.on("chat:typing", (payload: { conversationId: number; userId: number; isTyping: boolean }) => {
+    socket.on("chat:typing", (payload: { conversationId: number; role?: string; userId: number; isTyping: boolean }) => {
       if (payload.conversationId !== selectedConversationRef.current) {
         return;
       }
 
-      if (payload.userId === adminId) {
+      // IDs are only unique per role: a donor or user can share the admin's numeric ID.
+      if (payload.role === "superadmin" && payload.userId === adminId) {
         return;
       }
 
@@ -434,6 +435,24 @@ export default function MessagesPage() {
     socket.emit("chat:join", { conversationId: activeConversationId });
     joinedConversationRef.current = activeConversationId;
   }, [activeConversationId, socketStatus]);
+
+  // Attachment downloads require the bearer token, which a plain link can't send.
+  const openAttachment = async (url: string) => {
+    if (!token) return;
+    // Open the tab synchronously so popup blockers allow it, then point it at the file.
+    const tab = window.open("", "_blank");
+    try {
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error();
+      const objectUrl = URL.createObjectURL(await response.blob());
+      if (tab) tab.location.href = objectUrl;
+      else window.location.assign(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      tab?.close();
+      setMessageError("Couldn't open that attachment. It may have been removed.");
+    }
+  };
 
   const handleConversationSelect = (conversationId: number) => {
       setSelectedConversationId(conversationId);
@@ -863,6 +882,10 @@ export default function MessagesPage() {
                                       href={attachmentUrl}
                                       target="_blank"
                                       rel="noreferrer"
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        void openAttachment(attachmentUrl);
+                                      }}
                                       className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-[12px] transition-colors ${isMine ? "border-white/20 bg-white/10 text-white hover:bg-white/15" : "border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] text-[var(--adm-fg)] hover:bg-[var(--adm-hover)]"}`}
                                     >
                                       <Paperclip size={13} />

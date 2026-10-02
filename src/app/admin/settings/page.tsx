@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState } from 'react';
+import PreviewNotice from '@/components/ui/PreviewNotice';
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
       onClick={onChange}
       className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none ${
         checked ? 'bg-[var(--adm-accent)]' : 'bg-[var(--adm-border)]'
@@ -36,6 +41,11 @@ export default function SettingsPage() {
         <h1 className="text-[24px] font-bold text-[var(--adm-fg)] mb-1">Settings</h1>
         <p className="text-[14px] text-[var(--adm-fg-dim)]">Platform configuration and preferences</p>
       </div>
+
+      <PreviewNotice>
+        <strong>Preview only.</strong> These settings aren&apos;t stored by the backend yet. Changes here are not saved and
+        have no effect on email/SMS alerts, 2FA or session timeouts.
+      </PreviewNotice>
 
       {/* Organization Section */}
       <div className="bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-2xl p-6 shadow-sm">
@@ -74,6 +84,7 @@ export default function SettingsPage() {
               <span className="text-[14px] text-[var(--adm-fg)] font-medium">{label}</span>
               <Toggle
                 checked={notifs[key as keyof typeof notifs]}
+                label={label}
                 onChange={() => setNotifs(prev => ({ ...prev, [key]: !prev[key as keyof typeof notifs] }))}
               />
             </div>
@@ -92,6 +103,7 @@ export default function SettingsPage() {
             </div>
             <Toggle
               checked={security.twofa}
+              label="Require 2FA for all admins"
               onChange={() => setSecurity(prev => ({ ...prev, twofa: !prev.twofa }))}
             />
           </div>
@@ -115,10 +127,7 @@ export default function SettingsPage() {
 
       {/* Footer Buttons */}
       <div className="flex items-center justify-end gap-3 pb-4">
-        <button className="px-6 py-2.5 border border-[color:var(--adm-border)] text-[var(--adm-fg-dim)] hover:text-[var(--adm-fg)] hover:bg-[var(--adm-hover)] rounded-xl text-[14px] font-semibold transition-all">
-          Cancel
-        </button>
-        <button className="px-6 py-2.5 bg-[#dc2626] hover:bg-[#b91c1c] text-white rounded-xl text-[14px] font-semibold transition-all shadow-[0_4px_12px_rgba(220,38,38,0.15)]">
+        <button disabled title="Settings can't be saved yet" className="px-6 py-2.5 bg-[#dc2626] text-white rounded-xl text-[14px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
           Save changes
         </button>
       </div>

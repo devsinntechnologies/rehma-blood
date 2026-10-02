@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus, Pencil, Ban } from 'lucide-react';
+import PreviewNotice from '@/components/ui/PreviewNotice';
 
+// Sample data: the backend has no sub-admin accounts yet (only the single superadmin exists).
 const subAdmins = [
   {
     id: 1,
@@ -34,16 +36,7 @@ const subAdmins = [
 ];
 
 export default function SubAdminsPage() {
-  const [admins, setAdmins] = useState(subAdmins);
-
-  const toggleSuspend = (id: number) => {
-    setAdmins(prev =>
-      prev.map(a => a.id === id
-        ? { ...a, status: a.status === 'Active' ? 'Suspended' : 'Active' }
-        : a
-      )
-    );
-  };
+  const admins = subAdmins;
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,11 +46,16 @@ export default function SubAdminsPage() {
           <h1 className="text-[24px] font-bold text-[var(--adm-fg)] mb-1">Sub-Admins</h1>
           <p className="text-[14px] text-[var(--adm-fg-faint)]">Manage regional sub-administrators and permissions</p>
         </div>
-        <button className="flex items-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] active:scale-[0.98] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold transition-all shadow-[0_4px_12px_rgba(220,38,38,0.1)]">
+        <button disabled title="Not available yet" className="flex items-center gap-2 bg-[#dc2626] hover:bg-[#b91c1c] text-white px-4 py-2.5 rounded-xl text-[14px] font-semibold transition-all shadow-[0_4px_12px_rgba(220,38,38,0.1)] disabled:opacity-50 disabled:cursor-not-allowed">
           <Plus size={16} />
           Add Sub-Admin
         </button>
       </div>
+
+      <PreviewNotice>
+        <strong>Preview only.</strong> Sub-admin accounts aren&apos;t supported by the backend yet, so the people below are
+        sample data and these actions are disabled. Only the main superadmin account can sign in today.
+      </PreviewNotice>
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -103,13 +101,14 @@ export default function SubAdminsPage() {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-3 pt-1 border-t border-[color:var(--adm-border)] mt-2">
-              <button className="flex-1 flex items-center justify-center gap-2 border border-[color:var(--adm-border)] text-[var(--adm-fg)] hover:bg-[var(--adm-hover)] py-2 rounded-xl text-[13px] font-semibold transition-colors">
+              <button disabled title="Not available yet" className="flex-1 flex items-center justify-center gap-2 border border-[color:var(--adm-border)] text-[var(--adm-fg)] py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Pencil size={13} />
                 Edit
               </button>
               <button
-                onClick={() => toggleSuspend(admin.id)}
-                className={`flex-1 flex items-center justify-center gap-2 border py-2 rounded-xl text-[13px] font-semibold transition-colors ${
+                disabled
+                title="Not available yet"
+                className={`flex-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border py-2 rounded-xl text-[13px] font-semibold transition-colors ${
                   admin.status === 'Active'
                     ? 'border-red-500/20 text-[#ef4444] hover:bg-red-500/5'
                     : 'border-green-500/20 text-[#22c55e] hover:bg-green-500/5'

@@ -9,11 +9,12 @@ export function useDonations() {
   const donationsState = useAppSelector((state) => state.donations);
   const hasToken = useAppSelector((state) => Boolean(state.auth.accessToken));
 
+  // Refresh whenever a screen that shows donations mounts, so the list never goes stale.
   useEffect(() => {
-    if (hasToken && donationsState.status === "idle") {
+    if (hasToken) {
       dispatch(fetchDonations());
     }
-  }, [dispatch, donationsState.status, hasToken]);
+  }, [dispatch, hasToken]);
 
   return donationsState;
 }

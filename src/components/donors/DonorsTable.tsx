@@ -18,9 +18,16 @@ type DonorsTableProps = {
   donors: Donor[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  isFiltered?: boolean;
 };
 
-export default function DonorsTable({ donors, status, error }: DonorsTableProps) {
+export function availabilityBadgeClass(status: string | null | undefined) {
+  if (status === "Available") return "status-badge-active";
+  if (status === "Emergency Only" || status === "Recently Donated") return "status-badge-pending";
+  return "status-badge-inactive";
+}
+
+export default function DonorsTable({ donors, status, error, isFiltered = false }: DonorsTableProps) {
   const dispatch = useAppDispatch();
   const selectedDonorDetails = useAppSelector((state) => state.donors.selectedDonor);
   const selectedStatus = useAppSelector((state) => state.donors.selectedStatus);
@@ -29,9 +36,6 @@ export default function DonorsTable({ donors, status, error }: DonorsTableProps)
   const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  const rows = donors.map((donor) => ({
-    ...donor,
-  }));
 
   const handleOpenDetails = (donorId: number) => {
     setIsDetailsOpen(true);
@@ -62,24 +66,24 @@ export default function DonorsTable({ donors, status, error }: DonorsTableProps)
               </tr>
             </thead>
             <tbody className="divide-y divide-[color:var(--adm-border)]">
-              {rows.map((donor) => (
+              {donors.map((donor) => (
                 <tr key={donor.id} className="hover:bg-[var(--adm-hover)] transition-colors group">
                   <td className="px-5 py-[14px] text-[13px] font-medium text-[var(--adm-fg-faint)] whitespace-nowrap">#{donor.id}</td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-[14px] font-semibold text-[var(--adm-fg)]">{donor.fullName}</span>
-                      <span className="text-[12px] text-[var(--adm-fg-dim)]">{donor.email}</span>
+                      <span className="text-[12px] text-[var(--adm-fg-dim)]">{donor.email ?? donor.city ?? "—"}</span>
                     </div>
                   </td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
                     <div className="blood-badge h-8 min-w-[32px] px-1.5">
-                      {donor.bloodGroup}
+                      {donor.bloodGroup ?? "?"}
                     </div>
                   </td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
                     <div className="flex items-center gap-1.5 text-[13px] text-[var(--adm-fg-dim)]">
                       <Phone size={14} className="text-[var(--adm-fg-faint)]" />
-                      {donor.phone}
+                      {donor.phone ?? "—"}
                     </div>
                   </td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
@@ -90,11 +94,9 @@ export default function DonorsTable({ donors, status, error }: DonorsTableProps)
                     )}
                   </td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
-                    {donor.isAvailable ? (
-                      <span className="status-badge-active">Available</span>
-                    ) : (
-                      <span className="status-badge-inactive">Unavailable</span>
-                    )}
+                    <span className={availabilityBadgeClass(donor.availabilityStatus)}>
+                      {donor.availabilityStatus ?? (donor.isAvailable ? "Available" : "Not Available")}
+                    </span>
                   </td>
                   <td className="px-5 py-[14px] whitespace-nowrap">
                     <div className="flex items-center gap-2">
@@ -109,7 +111,9 @@ export default function DonorsTable({ donors, status, error }: DonorsTableProps)
                       <button
                         type="button"
                         onClick={() => setSelectedDonor(donor)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] px-3 py-2 text-[13px] font-semibold text-[var(--adm-fg)] transition-all hover:bg-[var(--adm-hover)]"
+                        disabled={donor.latitude == null || donor.longitude == null}
+                        title={donor.latitude == null || donor.longitude == null ? "This donor hasn't shared a location" : undefined}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] px-3 py-2 text-[13px] font-semibold text-[var(--adm-fg)] transition-all hover:bg-[var(--adm-hover)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[var(--adm-surface-2)]"
                       >
                         <LocateFixed size={14} />
                         See Location
@@ -136,7 +140,7 @@ export default function DonorsTable({ donors, status, error }: DonorsTableProps)
 
         {status === "succeeded" && donors.length === 0 && (
           <div className="border-t border-[color:var(--adm-border)] px-5 py-8 text-center text-[13px] text-[var(--adm-fg-dim)]">
-            No donors found.
+            {isFiltered ? "No donors match these filters." : "No donors registered yet."}
           </div>
         )}
       </div>

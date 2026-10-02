@@ -4,6 +4,8 @@ import type { RootState } from "@/store/store";
 
 export type Donation = {
   id: number;
+  requestId: number | null;
+  donorId: number;
   donorName: string;
   bloodGroup: string;
   status: string;
@@ -67,7 +69,7 @@ const donationsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchDonations.pending, (state) => {
-        state.status = "loading";
+        if (state.items.length === 0) state.status = "loading";
         state.error = null;
       })
       .addCase(fetchDonations.fulfilled, (state, action) => {

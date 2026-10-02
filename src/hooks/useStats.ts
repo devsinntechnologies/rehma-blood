@@ -9,11 +9,12 @@ export function useStats() {
   const statsState = useAppSelector((state) => state.stats);
   const hasToken = useAppSelector((state) => Boolean(state.auth.accessToken));
 
+  // Refresh on every visit to the dashboard so the numbers are current.
   useEffect(() => {
-    if (hasToken && statsState.status === "idle") {
+    if (hasToken) {
       dispatch(fetchStats());
     }
-  }, [dispatch, statsState.status, hasToken]);
+  }, [dispatch, hasToken]);
 
   return statsState;
 }

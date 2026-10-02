@@ -1,11 +1,13 @@
 "use client"
 
-import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import BaseTileLayer from "@/components/live-map/BaseTileLayer";
 import L from 'leaflet';
 import { useTheme } from '@/context/ThemeContext';
-import { useMapOverview } from '@/hooks/useMapOverview';
+import type { MapOverview } from '@/hooks/useMapOverview';
+import { formatUrgency, isUrgent } from '@/lib/requestStatus';
 
 // Define the custom icon creator
 const createCustomIcon = (color: string, label: string) => {
@@ -57,91 +59,103 @@ const createCustomIcon = (color: string, label: string) => {
   });
 };
 
-// Blood group color mapping
-const BLOOD_GROUP_COLORS: Record<string, string> = {
-  'A+': '#16a34a',
-  'A-': '#16a34a',
-  'B+': '#16a34a',
-  'B-': '#16a34a',
-  'O+': '#16a34a',
-  'O-': '#16a34a',
-  'AB+': '#16a34a',
-  'AB-': '#16a34a',
-};
+const DONOR_COLOR = '#16a34a';
+const URGENT_COLOR = '#dc2626';
+const NORMAL_COLOR = '#3b82f6';
 
-// Request urgency color mapping
-const URGENCY_COLORS: Record<string, string> = {
-  'critical': '#dc2626',
-  'high': '#ea580c',
-  'normal': '#3b82f6',
-};
+/** Frames every marker after each data change; falls back to the search centre when there are none. */
+function FitToMarkers({ points, center, zoom }: { points: [number, number][]; center: [number, number]; zoom: number }) {
+  const map = useMap();
+  const key = points.map((point) => point.join(',')).join('|');
 
-export default function MapComponent() {
+  useEffect(() => {
+    const frame = () => {
+      // The container may have been resized by layout after Leaflet first measured it.
+      map.invalidateSize();
+      if (points.length === 0) {
+        map.setView(center, zoom);
+      } else if (points.length === 1) {
+        map.setView(points[0], 12);
+      } else {
+        map.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 13 });
+      }
+    };
+    frame();
+    // Re-frame once layout has settled (sidebar, header and fonts can still shift the container).
+    const timer = window.setTimeout(frame, 300);
+    return () => window.clearTimeout(timer);
+    // `key` captures point changes; re-running on every render would fight the user's panning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, key, center[0], center[1], zoom]);
+
+  return null;
+}
+
+export default function MapComponent({ map }: { map: MapOverview }) {
   const { theme } = useTheme();
-  const { donors, requests, currentLocation, status, geolocationError } = useMapOverview();
+  const { donors, requests, center, centeredOnAdmin, filters, status, error } = map;
 
-  if (typeof window === 'undefined') return null;
 
-  const tileUrl = theme === 'dark'
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-
-  // Create markers from API data
   const markers = useMemo(() => {
-    const donorMarkers = (donors ?? []).map((donor) => ({
-      id: `donor-${donor.id}`,
-      pos: [donor.latitude ?? 0, donor.longitude ?? 0] as [number, number],
-      label: donor.bloodGroup,
-      type: 'donor' as const,
-      color: BLOOD_GROUP_COLORS[donor.bloodGroup] || '#16a34a',
-      donor,
-    }));
+    const donorMarkers = filters.layer === 'requests' ? [] : donors
+      .filter((donor) => donor.latitude != null && donor.longitude != null)
+      .map((donor) => ({
+        id: `donor-${donor.id}`,
+        pos: [donor.latitude as number, donor.longitude as number] as [number, number],
+        label: donor.bloodGroup ?? '?',
+        type: 'donor' as const,
+        color: DONOR_COLOR,
+        donor,
+      }));
 
-    const requestMarkers = (requests ?? []).map((request) => ({
-      id: `request-${request.id}`,
-      pos: [request.latitude ?? 0, request.longitude ?? 0] as [number, number],
-      label: request.bloodGroup,
-      type: 'request' as const,
-      color: URGENCY_COLORS[request.urgency.toLowerCase()] || '#3b82f6',
-      request,
-    }));
+    const requestMarkers = filters.layer === 'donors' ? [] : requests
+      .filter((request) => request.latitude != null && request.longitude != null)
+      .map((request) => ({
+        id: `request-${request.id}`,
+        pos: [request.latitude, request.longitude] as [number, number],
+        label: request.bloodGroup,
+        type: 'request' as const,
+        color: isUrgent(request.urgency) ? URGENT_COLOR : NORMAL_COLOR,
+        request,
+      }));
 
     return [...donorMarkers, ...requestMarkers];
-  }, [donors, requests]);
+  }, [donors, requests, filters.layer]);
 
-  const mapCenter: [number, number] = currentLocation.latitude && currentLocation.longitude
-    ? [currentLocation.latitude, currentLocation.longitude]
-    : [30.3753, 69.3451];
+  const mapCenter: [number, number] = [center.latitude, center.longitude];
+  const defaultZoom = centeredOnAdmin ? 11 : 5;
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] transition-colors relative">
-      {/* Loading indicator */}
       {status === 'loading' && (
-        <div className="absolute top-4 left-4 z-[1000] bg-[var(--adm-surface)] border border-[var(--adm-border)] rounded-lg px-4 py-2 text-sm text-[var(--adm-fg)]">
-          Loading nearby donors and requests...
+        <div className="absolute top-4 left-14 z-[1000] bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-lg px-4 py-2 text-sm text-[var(--adm-fg)] shadow">
+          Loading donors and requests...
         </div>
       )}
 
-      {/* Geolocation error */}
-      {geolocationError && (
-        <div className="absolute top-4 left-4 z-[1000] bg-red-900/80 border border-red-700 rounded-lg px-4 py-2 text-sm text-red-100 max-w-sm">
-          {geolocationError}
+      {status === 'failed' && (
+        <div className="absolute top-4 left-14 z-[1000] bg-red-900/90 border border-red-700 rounded-lg px-4 py-2 text-sm text-red-100 max-w-sm flex items-center gap-3">
+          <span>{error ?? 'Failed to load the map.'}</span>
+          <button type="button" onClick={map.refresh} className="underline font-semibold shrink-0">Retry</button>
+        </div>
+      )}
+
+      {status === 'succeeded' && markers.length === 0 && (
+        <div className="absolute top-4 left-14 z-[1000] bg-[var(--adm-surface)] border border-[color:var(--adm-border)] rounded-lg px-4 py-2 text-sm text-[var(--adm-fg-dim)] shadow">
+          Nothing to show for these filters.
         </div>
       )}
 
       <MapContainer
         center={mapCenter}
-        zoom={12}
+        zoom={defaultZoom}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%', background: theme === 'dark' ? '#0a0a0a' : '#f0f0f0' }}
         zoomControl={false}
       >
         <ZoomControl position="topleft" />
-        <TileLayer
-          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={tileUrl}
-          subdomains={['a', 'b', 'c', 'd']}
-        />
+        <BaseTileLayer dark={theme === "dark"} />
+        <FitToMarkers points={markers.map((marker) => marker.pos)} center={mapCenter} zoom={defaultZoom} />
 
         {markers.map((marker) => (
           <Marker
@@ -153,34 +167,27 @@ export default function MapComponent() {
               <div className="p-2 text-sm">
                 {marker.type === 'donor' ? (
                   <>
-                    <div className="font-bold text-[var(--adm-fg)]">{marker.donor.fullName}</div>
-                    <div className="text-[var(--adm-fg-dim)] text-xs">{marker.donor.city}</div>
-                    <div className="text-xs text-[var(--adm-fg)] mt-1">
+                    <div className="font-bold">{marker.donor.fullName}</div>
+                    {marker.donor.city && <div className="text-xs opacity-70">{marker.donor.city}</div>}
+                    <div className="text-xs mt-1">
                       Blood: <span className="font-semibold">{marker.label}</span>
                     </div>
-                    <div className="text-xs text-[var(--adm-fg-dim)]">
-                      Distance: {marker.donor.distanceKm?.toFixed(1) || 0} km
-                    </div>
-                    <div className="text-xs text-[var(--adm-fg-dim)]">
-                      Available: {marker.donor.availabilityStatus}
-                    </div>
+                    {marker.donor.phone && <div className="text-xs">Phone: {marker.donor.phone}</div>}
+                    {centeredOnAdmin && Number.isFinite(marker.donor.distanceKm) && (
+                      <div className="text-xs opacity-70">Distance: {marker.donor.distanceKm.toFixed(1)} km</div>
+                    )}
+                    <div className="text-xs opacity-70">{marker.donor.availabilityStatus}</div>
                   </>
                 ) : (
                   <>
-                    <div className="font-bold text-[var(--adm-fg)]">{marker.request.requesterName}</div>
-                    <div className="text-xs text-[var(--adm-fg)] mt-1">
-                      Blood: <span className="font-semibold">{marker.label}</span>
+                    <div className="font-bold">{marker.request.requesterName ?? `Request #${marker.request.id}`}</div>
+                    <div className="text-xs mt-1">
+                      Blood: <span className="font-semibold">{marker.label}</span> · {marker.request.requiredUnits} unit{marker.request.requiredUnits === 1 ? '' : 's'}
                     </div>
-                    <div className="text-xs text-[var(--adm-fg)] mt-1">
-                      Units: {marker.request.requiredUnits}
+                    <div className={`text-xs font-semibold mt-1 ${isUrgent(marker.request.urgency) ? 'text-red-500' : 'text-blue-500'}`}>
+                      {formatUrgency(marker.request.urgency)}
                     </div>
-                    <div className={`text-xs font-semibold mt-1 ${
-                      marker.request.urgency.toLowerCase() === 'critical' ? 'text-red-500' :
-                      marker.request.urgency.toLowerCase() === 'high' ? 'text-orange-500' :
-                      'text-blue-500'
-                    }`}>
-                      {marker.request.urgency}
-                    </div>
+                    {marker.request.notes && <div className="text-xs mt-1 opacity-80">{marker.request.notes}</div>}
                   </>
                 )}
               </div>

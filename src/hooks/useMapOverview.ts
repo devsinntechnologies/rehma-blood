@@ -1,110 +1,61 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  centerOnAdmin,
   fetchMapOverview,
-  setCurrentLocation,
-  setGeolocationError,
+  resetToAllAreas,
   setBloodGroupFilter,
+  setGeolocationError,
+  setLayerFilter,
   setRadiusFilter,
-  selectMapDonors,
-  selectMapRequests,
-  selectMapCurrentLocation,
-  selectMapFilters,
-  selectMapStatus,
-  selectMapError,
-  selectGeolocationError,
+  type MapLayer,
 } from "@/store/mapSlice";
 
+/** Owns the Live Map data. Call it once per page and pass the result down. */
 export function useMapOverview() {
   const dispatch = useAppDispatch();
-  const auth = useAppSelector((state) => state.auth);
-  const donors = useAppSelector(selectMapDonors);
-  const requests = useAppSelector(selectMapRequests);
-  const currentLocation = useAppSelector(selectMapCurrentLocation);
-  const filters = useAppSelector(selectMapFilters);
-  const status = useAppSelector(selectMapStatus);
-  const error = useAppSelector(selectMapError);
-  const geolocationError = useAppSelector(selectGeolocationError);
+  const hasToken = useAppSelector((state) => Boolean(state.auth.accessToken));
+  const map = useAppSelector((state) => state.map);
+  const { center, filters } = map;
 
-  // Request geolocation on mount
+  // Refetch only when the query inputs change — never in response to our own status updates.
   useEffect(() => {
+    if (hasToken) {
+      dispatch(fetchMapOverview());
+    }
+  }, [dispatch, hasToken, center.latitude, center.longitude, filters.bloodGroup, filters.radiusKm]);
+
+  const locateMe = useCallback(() => {
     if (!navigator.geolocation) {
-      dispatch(setGeolocationError("Geolocation is not supported by this browser"));
+      dispatch(setGeolocationError("Location isn't supported by this browser."));
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+      ({ coords }) => dispatch(centerOnAdmin({ latitude: coords.latitude, longitude: coords.longitude })),
+      (error) =>
         dispatch(
-          setCurrentLocation({
-            latitude,
-            longitude,
-          })
-        );
-      },
-      (error) => {
-        let errorMessage = "Failed to get your location";
-        if (error.code === error.PERMISSION_DENIED) {
-          errorMessage = "Permission denied. Please enable location access.";
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMessage = "Location information is unavailable.";
-        } else if (error.code === error.TIMEOUT) {
-          errorMessage = "Location request timed out.";
-        }
-        dispatch(setGeolocationError(errorMessage));
-      },
-      {
-        timeout: 10000,
-        enableHighAccuracy: false,
-      }
+          setGeolocationError(
+            error.code === error.PERMISSION_DENIED
+              ? "Location permission was denied. Showing all areas instead."
+              : "Couldn't get your location. Showing all areas instead."
+          )
+        ),
+      { timeout: 10000, enableHighAccuracy: false }
     );
   }, [dispatch]);
 
-  // Fetch map overview when location or filters change
-  useEffect(() => {
-    if (
-      !auth.accessToken ||
-      currentLocation.latitude === null ||
-      currentLocation.longitude === null
-    ) {
-      return;
-    }
-
-    // Only fetch if in idle state or if we have new filters/location
-    if (status === "idle" || status === "succeeded" || status === "failed") {
-      dispatch(
-        fetchMapOverview({
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          bloodGroup: filters.bloodGroup,
-          radiusKm: filters.radiusKm,
-        })
-      );
-    }
-  }, [
-    dispatch,
-    auth.accessToken,
-    currentLocation.latitude,
-    currentLocation.longitude,
-    filters.bloodGroup,
-    filters.radiusKm,
-    status,
-  ]);
-
   return {
-    donors,
-    requests,
-    currentLocation,
-    filters,
-    status,
-    error,
-    geolocationError,
-    setBloodGroupFilter: (bloodGroup: string | null) =>
-      dispatch(setBloodGroupFilter(bloodGroup)),
-    setRadiusFilter: (radiusKm: number | null) =>
-      dispatch(setRadiusFilter(radiusKm)),
+    ...map,
+    refresh: () => dispatch(fetchMapOverview()),
+    setBloodGroup: (bloodGroup: string | null) => dispatch(setBloodGroupFilter(bloodGroup)),
+    setRadius: (radiusKm: number) => dispatch(setRadiusFilter(radiusKm)),
+    setLayer: (layer: MapLayer) => dispatch(setLayerFilter(layer)),
+    locateMe,
+    showAllAreas: () => dispatch(resetToAllAreas()),
+    dismissGeolocationError: () => dispatch(setGeolocationError(null)),
   };
 }
+
+export type MapOverview = ReturnType<typeof useMapOverview>;

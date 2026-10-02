@@ -1,109 +1,99 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { useActiveBloodRequests } from "@/hooks/useActiveBloodRequests";
+import type { ActiveBloodRequest } from "@/store/bloodRequestsSlice";
+import { formatRequestStatus, formatUrgency, isUrgent } from "@/lib/requestStatus";
 
-export default function RecentBloodRequests() {
-  const {
-    activeItems,
-    urgentItems,
-    activeStatus,
-    urgentStatus,
-    activeError,
-    urgentError,
-    loadUrgentRequests,
-  } = useActiveBloodRequests();
-  const [showUrgentOnly, setShowUrgentOnly] = React.useState(false);
-  const safeActiveItems = activeItems ?? [];
-  const safeUrgentItems = urgentItems ?? [];
-  const safeActiveStatus = activeStatus ?? "idle";
-  const safeUrgentStatus = urgentStatus ?? "idle";
-  const safeActiveError = activeError ?? null;
-  const safeUrgentError = urgentError ?? null;
-  const visibleItems = showUrgentOnly ? safeUrgentItems : safeActiveItems;
-  const visibleStatus = showUrgentOnly ? safeUrgentStatus : safeActiveStatus;
-  const visibleError = showUrgentOnly ? safeUrgentError : safeActiveError;
+const MAX_SHOWN = 5;
 
-  const formatUrgency = (urgency: string) => {
-    const normalized = urgency.toLowerCase();
-    if (normalized === "urgent") {
-      return "Critical";
-    }
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
+type Props = {
+  requests: ActiveBloodRequest[];
+  status: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
+};
+
+export default function RecentBloodRequests({ requests, status, error }: Props) {
+  const [urgentOnly, setUrgentOnly] = useState(false);
+
+  // Everything that still needs attention, newest first.
+  const open = useMemo(
+    () =>
+      requests
+        .filter((request) => request.status !== "donation_completed")
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()),
+    [requests]
+  );
+  const visible = urgentOnly ? open.filter((request) => isUrgent(request.urgency)) : open;
 
   return (
     <div className="flex flex-col rounded-xl border p-5 bg-[var(--adm-surface)] border-[color:var(--adm-border)] h-full shadow-sm transition-colors">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-[var(--adm-fg)] text-[17px] font-semibold">Recent Blood Requests</h3>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div>
+          <h3 className="text-[var(--adm-fg)] text-[17px] font-semibold">Requests Needing Attention</h3>
+          <p className="text-[12px] text-[var(--adm-fg-dim)] mt-0.5">Open and in-progress requests</p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              if (!showUrgentOnly && safeUrgentStatus === "idle") {
-                loadUrgentRequests();
-              }
-              setShowUrgentOnly((prev) => !prev);
-            }}
-            className={`text-xs font-medium px-2 py-1 rounded-md border transition-colors ${showUrgentOnly
-              ? "bg-red-500 text-white border-red-500"
-              : "text-[var(--adm-fg-dim)] bg-[var(--adm-surface-2)] border-[color:var(--adm-border)]"
-              }`}
+            onClick={() => setUrgentOnly((prev) => !prev)}
+            aria-pressed={urgentOnly}
+            className={`text-xs font-medium px-2 py-1 rounded-md border transition-colors ${
+              urgentOnly ? "bg-red-500 text-white border-red-500" : "text-[var(--adm-fg-dim)] bg-[var(--adm-surface-2)] border-[color:var(--adm-border)]"
+            }`}
           >
-            {showUrgentOnly ? "Show All" : "Urgent Only"}
+            Urgent only
           </button>
           <span className="text-xs text-[var(--adm-fg-dim)] font-medium bg-[var(--adm-surface-2)] px-2 py-1 rounded-md border border-[color:var(--adm-border)]">
-            {visibleItems.length} total
+            {visible.length} total
           </span>
         </div>
       </div>
 
-      {(visibleStatus === "loading" || visibleStatus === "idle") && (
+      {(status === "loading" || status === "idle") && (
         <div className="text-sm text-[var(--adm-fg-dim)] flex items-center gap-2 py-4">
           <Loader2 size={14} className="animate-spin" /> Loading requests...
         </div>
       )}
 
-      {visibleStatus === "failed" && (
-        <div className="text-sm text-red-500 py-4">{visibleError ?? "Unable to load recent blood requests."}</div>
+      {status === "failed" && <div className="text-sm text-red-500 py-4">{error ?? "Unable to load blood requests."}</div>}
+
+      {status === "succeeded" && visible.length === 0 && (
+        <div className="text-sm text-[var(--adm-fg-dim)] py-4">{urgentOnly ? "No urgent requests right now." : "No open blood requests."}</div>
       )}
 
-      {visibleStatus === "succeeded" && visibleItems.length === 0 && (
-        <div className="text-sm text-[var(--adm-fg-dim)] py-4">No active blood requests.</div>
-      )}
-
-      {/* List */}
-      {visibleStatus === "succeeded" && visibleItems.length > 0 && (
-      <div className="space-y-3">
-        {visibleItems.map((req) => {
-          const urgencyLabel = formatUrgency(req.urgency);
-          let badgeClass = "bg-blue-500/10 text-blue-600 border-blue-500/20"; // Normal
-          if (urgencyLabel === "Critical") badgeClass = "bg-red-500 text-white shadow-sm";
-          if (urgencyLabel === "High") badgeClass = "bg-orange-500 text-white shadow-sm";
-
-          return (
+      {status === "succeeded" && visible.length > 0 && (
+        <div className="space-y-3">
+          {visible.slice(0, MAX_SHOWN).map((req) => (
             <div
               key={req.id}
-              className="flex items-center justify-between p-4 rounded-xl bg-[var(--adm-surface-2)] border border-[color:var(--adm-border)] hover:border-[var(--adm-fg-faint)] transition-all cursor-pointer group shadow-sm"
+              className="flex items-center justify-between gap-3 p-4 rounded-xl bg-[var(--adm-surface-2)] border border-[color:var(--adm-border)] shadow-sm"
             >
-              <div className="flex items-center gap-4">
-                <div className="blood-badge h-12 w-12 shrink-0 rounded-xl text-lg font-bold">
-                  {req.bloodGroup}
-                </div>
-                <div>
-                  <div className="text-[var(--adm-fg)] text-[15px] font-semibold mb-0.5">{req.requesterName}</div>
-                  <div className="text-[var(--adm-fg-dim)] text-[12px] font-medium">{req.status.toUpperCase()} · {req.requiredUnits} unit(s)</div>
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="blood-badge h-12 w-12 shrink-0 rounded-xl text-lg font-bold">{req.bloodGroup}</div>
+                <div className="min-w-0">
+                  <div className="text-[var(--adm-fg)] text-[15px] font-semibold mb-0.5 truncate">{req.requesterName ?? `Request #${req.id}`}</div>
+                  <div className="text-[var(--adm-fg-dim)] text-[12px] font-medium">
+                    {formatRequestStatus(req.status)} · {req.requiredUnits} unit{req.requiredUnits === 1 ? "" : "s"}
+                  </div>
                 </div>
               </div>
-              <span className={`inline-flex items-center justify-center rounded-lg px-3 py-1 text-[11px] font-bold w-fit whitespace-nowrap shrink-0 border ${badgeClass}`}>
-                {urgencyLabel}
+              <span
+                className={`inline-flex items-center justify-center rounded-lg px-3 py-1 text-[11px] font-bold whitespace-nowrap shrink-0 border ${
+                  isUrgent(req.urgency) ? "bg-red-500 text-white border-red-500" : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                }`}
+              >
+                {formatUrgency(req.urgency)}
               </span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+          {visible.length > MAX_SHOWN && (
+            <Link href="/admin/blood-requests" className="block text-center text-[13px] font-semibold text-[var(--adm-accent)] hover:underline pt-1">
+              View all {visible.length} requests
+            </Link>
+          )}
+        </div>
       )}
     </div>
   );

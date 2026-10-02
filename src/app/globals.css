@@ -214,3 +214,8 @@ body {
   color: #d97706;
   border-color: #fde68a;
 }
+
+/* Dark map tiles: invert the OpenStreetMap layer to match the dark admin theme. */
+.adm-dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}

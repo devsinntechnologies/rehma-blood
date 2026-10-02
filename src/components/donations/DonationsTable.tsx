@@ -10,7 +10,20 @@ type DonationsTableProps = {
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString();
 
-const isCompleted = (value: string) => value.toLowerCase() === 'completed';
+const DONATION_STATUS_LABELS: Record<string, string> = {
+  request_pending: 'Awaiting Donor',
+  request_accepted: 'Donor Accepted',
+  donation_pending: 'Donation Pending',
+  completed: 'Completed',
+};
+
+function DonationStatus({ status }: { status: string }) {
+  return (
+    <span className={status === 'completed' ? 'status-badge-completed' : 'status-badge-pending'}>
+      {DONATION_STATUS_LABELS[status] ?? status.replaceAll('_', ' ')}
+    </span>
+  );
+}
 
 export default function DonationsTable({ donations, status, error }: DonationsTableProps) {
   return (
@@ -26,7 +39,7 @@ export default function DonationsTable({ donations, status, error }: DonationsTa
       )}
 
       {status === 'succeeded' && donations.length === 0 && (
-        <div className="p-6 text-sm text-[var(--adm-fg-dim)]">No donations found.</div>
+        <div className="p-6 text-sm text-[var(--adm-fg-dim)]">No donations yet. They appear here once a donor accepts a blood request.</div>
       )}
 
       {status === 'succeeded' && donations.length > 0 && (
@@ -36,7 +49,7 @@ export default function DonationsTable({ donations, status, error }: DonationsTa
         <table className="w-full">
           <thead>
             <tr className="border-b border-[color:var(--adm-border)]">
-              {['ID', 'Donor', 'Group', 'Date', 'Status'].map((col) => (
+              {['ID', 'Donor', 'Group', 'Request', 'Date', 'Status'].map((col) => (
                 <th key={col} className="text-left px-6 py-4 text-[12px] font-semibold text-[var(--adm-fg-dim)] uppercase tracking-wider">
                   {col}
                 </th>
@@ -55,12 +68,10 @@ export default function DonationsTable({ donations, status, error }: DonationsTa
                   <td className="px-6 py-4">
                     <span className="blood-badge px-2 py-0.5 min-w-[36px]">{row.bloodGroup}</span>
                   </td>
-                  <td className="px-6 py-4 text-[13px] text-[var(--adm-fg-dim)]">{formatDate(row.createdAt)}</td>
+                  <td className="px-6 py-4 text-[13px] text-[var(--adm-fg-dim)]">{row.requestId ? `#${row.requestId}` : '—'}</td>
+                  <td className="px-6 py-4 text-[13px] text-[var(--adm-fg-dim)]">{formatDate(row.updatedAt)}</td>
                   <td className="px-6 py-4">
-                    {isCompleted(row.status)
-                      ? <span className="status-badge-completed">Completed</span>
-                      : <span className="status-badge-verification">{row.status}</span>
-                    }
+                    <DonationStatus status={row.status} />
                   </td>
                 </tr>
               );
@@ -81,15 +92,13 @@ export default function DonationsTable({ donations, status, error }: DonationsTa
                     <p className="text-[11px] text-[var(--adm-fg-dim)]">DN{String(row.id).padStart(4, '0')}</p>
                   </div>
                 </div>
-                {isCompleted(row.status)
-                  ? <span className="status-badge-completed">Completed</span>
-                  : <span className="status-badge-verification">{row.status}</span>
-                }
+                <DonationStatus status={row.status} />
               </div>
               <div className="grid grid-cols-1 gap-2 text-[12px]">
                 <div>
                   <span className="text-[var(--adm-fg-dim)]">Date: </span>
-                  <span className="text-[var(--adm-fg)] font-medium">{formatDate(row.createdAt)}</span>
+                  <span className="text-[var(--adm-fg)] font-medium">{formatDate(row.updatedAt)}</span>
+                  {row.requestId && <span className="text-[var(--adm-fg-dim)]"> · Request #{row.requestId}</span>}
                 </div>
               </div>
             </div>

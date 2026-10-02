@@ -29,6 +29,21 @@ type LoginResponse = {
 
 type StoredAuth = Pick<AuthState, "accessToken" | "superAdmin">;
 
+/** Expiry of a JWT in epoch milliseconds, or null when it can't be read. */
+export const getTokenExpiry = (token: string): number | null => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
+
+export const isTokenExpired = (token: string) => {
+  const expiry = getTokenExpiry(token);
+  return expiry !== null && expiry <= Date.now();
+};
+
 const initialStoredAuth = (): StoredAuth => {
   if (typeof window === "undefined") {
     return { accessToken: null, superAdmin: null };
@@ -41,6 +56,10 @@ const initialStoredAuth = (): StoredAuth => {
     }
 
     const parsedValue = JSON.parse(rawValue) as StoredAuth;
+    if (!parsedValue.accessToken || isTokenExpired(parsedValue.accessToken)) {
+      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+      return { accessToken: null, superAdmin: null };
+    }
     return {
       accessToken: parsedValue.accessToken ?? null,
       superAdmin: parsedValue.superAdmin ?? null,
@@ -127,6 +146,13 @@ const authSlice = createSlice({
       state.error = null;
       clearPersistedAuth();
     },
+    sessionExpired(state) {
+      state.accessToken = null;
+      state.superAdmin = null;
+      state.status = "idle";
+      state.error = "Your session has expired. Please sign in again.";
+      clearPersistedAuth();
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -148,5 +174,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { signOut } = authSlice.actions;
+export const { signOut, sessionExpired } = authSlice.actions;
 export default authSlice.reducer;

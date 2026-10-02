@@ -1,11 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { BASE_URL } from "@/contant";
+import { apiRequest } from "@/lib/api";
 import type { RootState } from "@/store/store";
 
 export type ActiveBloodRequest = {
   id: number;
   requesterUserId: number | null;
-  requesterName: string;
+  requesterName: string | null;
   requesterContact: string | null;
   bloodGroup: string;
   requiredUnits: number;
@@ -14,6 +15,9 @@ export type ActiveBloodRequest = {
   latitude: number | null;
   longitude: number | null;
   status: string;
+  requestedToDonorId?: number | null;
+  requestedToDonorName?: string | null;
+  scheduledDate?: string | null;
   acceptedByDonorId: number | null;
   acceptedByDonorName: string | null;
   acceptedAt: string | null;
@@ -138,14 +142,35 @@ export const fetchUrgentBloodRequests = createAsyncThunk<
   );
 });
 
+export const deleteBloodRequest = createAsyncThunk<number, number, { state: RootState; rejectValue: string }>(
+  "bloodRequests/deleteBloodRequest",
+  async (requestId, { getState, rejectWithValue }) => {
+    const token = getState().auth.accessToken;
+    if (!token) return rejectWithValue("Please sign in again.");
+
+    try {
+      await apiRequest(`/blood-requests/${requestId}`, token, { method: "DELETE" });
+      return requestId;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to delete the request.");
+    }
+  }
+);
+
 const bloodRequestsSlice = createSlice({
   name: "bloodRequests",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(deleteBloodRequest.fulfilled, (state, action) => {
+        const keep = (request: ActiveBloodRequest) => request.id !== action.payload;
+        state.allItems = state.allItems.filter(keep);
+        state.activeItems = state.activeItems.filter(keep);
+        state.urgentItems = state.urgentItems.filter(keep);
+      })
       .addCase(fetchAllBloodRequests.pending, (state) => {
-        state.allStatus = "loading";
+        if (state.allItems.length === 0) state.allStatus = "loading";
         state.allError = null;
       })
       .addCase(fetchAllBloodRequests.fulfilled, (state, action) => {
@@ -158,7 +183,7 @@ const bloodRequestsSlice = createSlice({
         state.allError = action.payload ?? "Unable to load blood requests.";
       })
       .addCase(fetchActiveBloodRequests.pending, (state) => {
-        state.activeStatus = "loading";
+        if (state.activeItems.length === 0) state.activeStatus = "loading";
         state.activeError = null;
       })
       .addCase(fetchActiveBloodRequests.fulfilled, (state, action) => {

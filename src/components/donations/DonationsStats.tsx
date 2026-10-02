@@ -6,13 +6,12 @@ type DonationsStatsProps = {
 };
 
 export default function DonationsStats({ donations }: DonationsStatsProps) {
-  const completed = donations.filter((item) => item.status.toLowerCase() === 'completed').length;
-  const verification = donations.filter((item) => item.status.toLowerCase() === 'verification').length;
+  const completed = donations.filter((item) => item.status === 'completed').length;
 
   const stats = [
     { label: 'Total Donations', value: donations.length },
     { label: 'Completed', value: completed },
-    { label: 'Verification', value: verification },
+    { label: 'In Progress', value: donations.length - completed },
   ];
 
   return (

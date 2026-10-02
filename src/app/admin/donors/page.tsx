@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import DonorsSection from "@/components/donors/DonorsSection";
 
 export default function DonorsPage() {
   return (
-    <DonorsSection />
+    <Suspense>
+      <DonorsSection />
+    </Suspense>
   );
 }

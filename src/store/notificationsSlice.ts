@@ -242,7 +242,8 @@ const notificationsSlice = createSlice({
 
         if (index >= 0) {
           const wasUnread = !state.items[index].isRead;
-          state.items[index] = action.payload;
+          // The API envelope lifts the record's `message` into its own field, so merge rather than replace.
+          state.items[index] = { ...state.items[index], ...action.payload };
           if (wasUnread && action.payload.isRead) {
             state.unreadCount = Math.max(0, state.unreadCount - 1);
           }

@@ -1,8 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Loader2,
+  Power,
+  RefreshCw,
+  Ban,
+  Trash2,
   Droplets,
   Phone,
   Mail,
@@ -17,7 +21,14 @@ import {
   FileText,
   Shield,
 } from "lucide-react";
-import type { Donor } from "@/store/donorsSlice";
+import {
+  AVAILABILITY_STATUSES,
+  deleteDonorAsAdmin,
+  updateDonorAsAdmin,
+  type AvailabilityStatus,
+  type Donor,
+} from "@/store/donorsSlice";
+import { useAppDispatch } from "@/store/hooks";
 import {
   Dialog,
   DialogContent,
@@ -108,7 +119,7 @@ export default function DonorDetailsDialog({
                           : "bg-yellow-500/10 text-yellow-600"
                       }`}
                     >
-                      {donor.isAvailable ? "Available" : "Unavailable"}
+                      {donor.availabilityStatus ?? (donor.isAvailable ? "Available" : "Not Available")}
                     </span>
                     <span
                       className={`inline-flex text-xs font-medium px-2 py-1 rounded-md ${
@@ -123,6 +134,8 @@ export default function DonorDetailsDialog({
                 </div>
               </div>
 
+              <DonorAdminActions donor={donor} onDeleted={() => onOpenChange(false)} />
+
               {/* Contact Information */}
               <div>
                 <h4 className="text-sm font-semibold text-[var(--adm-fg)] mb-3 uppercase tracking-wide">
@@ -132,12 +145,12 @@ export default function DonorDetailsDialog({
                   <InfoItem
                     icon={<Mail size={14} />}
                     label="Email"
-                    value={donor.email}
+                    value={donor.email ?? "N/A"}
                   />
                   <InfoItem
                     icon={<Phone size={14} />}
                     label="Phone"
-                    value={donor.phone}
+                    value={donor.phone ?? "N/A"}
                   />
                 </div>
               </div>
@@ -176,12 +189,12 @@ export default function DonorDetailsDialog({
                   <InfoItem
                     icon={<Droplets size={14} />}
                     label="Blood Group"
-                    value={donor.bloodGroup}
+                    value={donor.bloodGroup ?? "N/A"}
                   />
                   <InfoItem
                     icon={<Heart size={14} />}
                     label="Total Donations"
-                    value={String(donor.totalDonations)}
+                    value={String(donor.totalDonations ?? 0)}
                   />
                   <InfoItem
                     icon={<Clock size={14} />}
@@ -260,7 +273,7 @@ export default function DonorDetailsDialog({
                   <InfoItem label="Donor ID" value={`#${donor.id}`} />
                   <InfoItem
                     label="Created By (User ID)"
-                    value={String(donor.createdByUserId)}
+                    value={donor.createdByUserId != null ? String(donor.createdByUserId) : "Self-registered"}
                   />
                   {donor.claimedByUserId && (
                     <InfoItem
@@ -289,6 +302,153 @@ export default function DonorDetailsDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const actionButtonClass =
+  "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50";
+
+function DonorAdminActions({ donor, onDeleted }: { donor: Donor; onDeleted: () => void }) {
+  const dispatch = useAppDispatch();
+  const [pending, setPending] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ tone: "error" | "success"; text: string } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const run = async (key: string, perform: () => Promise<{ payload?: unknown; error?: unknown }>, success: string) => {
+    setPending(key);
+    setFeedback(null);
+    const result = await perform();
+    setPending(null);
+    if ("error" in result) {
+      setFeedback({ tone: "error", text: (result.payload as string) ?? "Action failed." });
+      return false;
+    }
+    setFeedback({ tone: "success", text: success });
+    return true;
+  };
+
+  const canManagePromo = !donor.isClaimed && Boolean(donor.promoCode);
+
+  return (
+    <div className="rounded-xl border border-[color:var(--adm-border)] p-4 space-y-3">
+      <h4 className="text-sm font-semibold text-[var(--adm-fg)] uppercase tracking-wide">Admin Actions</h4>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={pending !== null}
+          onClick={() =>
+            run(
+              "active",
+              () => dispatch(updateDonorAsAdmin({ donorId: donor.id, action: { type: "setActive", isActive: !donor.isActive } })),
+              donor.isActive ? "Donor deactivated. They no longer appear on the map or in matching." : "Donor reactivated."
+            )
+          }
+          className={`${actionButtonClass} ${
+            donor.isActive
+              ? "border-red-500/30 text-red-500 hover:bg-red-500/10"
+              : "border-green-500/30 text-green-500 hover:bg-green-500/10"
+          }`}
+        >
+          {pending === "active" ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
+          {donor.isActive ? "Deactivate" : "Activate"}
+        </button>
+
+        <label className="inline-flex items-center gap-2 text-[13px] text-[var(--adm-fg-dim)]">
+          Availability
+          <select
+            value={donor.availabilityStatus ?? ""}
+            disabled={pending !== null}
+            onChange={(event) =>
+              run(
+                "availability",
+                () => dispatch(updateDonorAsAdmin({
+                  donorId: donor.id,
+                  action: { type: "setAvailability", availabilityStatus: event.target.value as AvailabilityStatus },
+                })),
+                `Availability set to ${event.target.value}.`
+              )
+            }
+            className="rounded-xl border border-[color:var(--adm-border)] bg-[var(--adm-surface-2)] px-3 py-2 text-[13px] font-semibold text-[var(--adm-fg)] focus:outline-none focus:border-[var(--adm-accent)]"
+          >
+            {AVAILABILITY_STATUSES.map((status) => (
+              <option key={status} value={status} className="bg-[var(--adm-surface)]">
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {canManagePromo && (
+          <>
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={() =>
+                run("regenerate", () => dispatch(updateDonorAsAdmin({ donorId: donor.id, action: { type: "regeneratePromo" } })), "New promo code generated.")
+              }
+              className={`${actionButtonClass} border-[color:var(--adm-border)] text-[var(--adm-fg)] hover:bg-[var(--adm-hover)]`}
+            >
+              {pending === "regenerate" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              New promo code
+            </button>
+            {donor.claimStatus !== "EXPIRED" && (
+              <button
+                type="button"
+                disabled={pending !== null}
+                onClick={() =>
+                  run("disable", () => dispatch(updateDonorAsAdmin({ donorId: donor.id, action: { type: "disablePromo" } })), "Promo code disabled.")
+                }
+                className={`${actionButtonClass} border-[color:var(--adm-border)] text-[var(--adm-fg)] hover:bg-[var(--adm-hover)]`}
+              >
+                {pending === "disable" ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+                Disable promo
+              </button>
+            )}
+          </>
+        )}
+
+        <div className="flex-1" />
+
+        {confirmingDelete ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] text-red-500 font-medium">Delete permanently?</span>
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={async () => {
+                if (await run("delete", () => dispatch(deleteDonorAsAdmin(donor.id)), "Donor deleted.")) onDeleted();
+              }}
+              className={`${actionButtonClass} border-red-600 bg-red-600 text-white hover:bg-red-700`}
+            >
+              {pending === "delete" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              className={`${actionButtonClass} border-[color:var(--adm-border)] text-[var(--adm-fg-dim)] hover:bg-[var(--adm-hover)]`}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={pending !== null}
+            onClick={() => setConfirmingDelete(true)}
+            className={`${actionButtonClass} border-red-500/30 text-red-500 hover:bg-red-500/10`}
+          >
+            <Trash2 size={14} />
+            Delete donor
+          </button>
+        )}
+      </div>
+      {feedback && (
+        <p role="status" className={`text-[13px] ${feedback.tone === "error" ? "text-red-500" : "text-green-500"}`}>
+          {feedback.text}
+        </p>
+      )}
+    </div>
   );
 }
 

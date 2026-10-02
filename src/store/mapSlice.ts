@@ -1,45 +1,57 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { BASE_URL } from "@/contant";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { apiRequest } from "@/lib/api";
 import type { RootState } from "@/store/store";
 import type { Donor } from "@/store/donorsSlice";
-import type { ActiveBloodRequest } from "@/store/bloodRequestsSlice";
 
 export type MapDonor = Donor & {
   distanceKm: number;
 };
 
+export type MapRequest = {
+  id: number;
+  requesterName: string | null;
+  bloodGroup: string;
+  urgency: string;
+  requiredUnits: number;
+  latitude: number;
+  longitude: number;
+  status: string;
+  notes: string | null;
+  createdAt?: string;
+};
+
+export type MapLayer = "all" | "donors" | "requests";
+
+/** Geographic centre of Pakistan; with ALL_AREAS_RADIUS_KM it covers the whole country. */
+export const PAKISTAN_CENTER = { latitude: 30.3753, longitude: 69.3451 };
+export const ALL_AREAS_RADIUS_KM = 1500;
+
 export type MapOverviewFilters = {
   bloodGroup: string | null;
-  radiusKm: number | null;
+  radiusKm: number;
+  layer: MapLayer;
 };
 
 type MapState = {
-  currentLocation: {
-    latitude: number | null;
-    longitude: number | null;
-  };
+  center: { latitude: number; longitude: number };
+  centeredOnAdmin: boolean;
   donors: MapDonor[];
-  requests: ActiveBloodRequest[];
+  requests: MapRequest[];
   filters: MapOverviewFilters;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
   geolocationError: string | null;
 };
 
-type ApiError = {
-  message?: string;
-};
-
 const initialState: MapState = {
-  currentLocation: {
-    latitude: null,
-    longitude: null,
-  },
+  center: PAKISTAN_CENTER,
+  centeredOnAdmin: false,
   donors: [],
   requests: [],
   filters: {
     bloodGroup: null,
-    radiusKm: 25,
+    radiusKm: ALL_AREAS_RADIUS_KM,
+    layer: "all",
   },
   status: "idle",
   error: null,
@@ -47,99 +59,63 @@ const initialState: MapState = {
 };
 
 export const fetchMapOverview = createAsyncThunk<
-  {
-    currentLocation: { latitude: number; longitude: number };
-    donors: MapDonor[];
-    requests: ActiveBloodRequest[];
-  },
-  { latitude: number; longitude: number; bloodGroup?: string | null; radiusKm?: number | null },
+  { donors: MapDonor[]; requests: MapRequest[] },
+  void,
   { state: RootState; rejectValue: string }
->(
-  "map/fetchMapOverview",
-  async (
-    { latitude, longitude, bloodGroup, radiusKm },
-    { getState, rejectWithValue }
-  ) => {
-    const { auth } = getState();
-    const accessToken = auth.accessToken;
-
-    if (!accessToken) {
-      return rejectWithValue("Not authenticated");
-    }
-
-    try {
-      const params = new URLSearchParams();
-      params.append("latitude", latitude.toString());
-      params.append("longitude", longitude.toString());
-      if (bloodGroup) {
-        params.append("bloodGroup", bloodGroup);
-      }
-      if (radiusKm) {
-        params.append("radiusKm", radiusKm.toString());
-      }
-
-      const response = await fetch(
-        `${BASE_URL}/map/overview?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      // Handle 304 Not Modified - return cached data from state
-      if (response.status === 304) {
-        const { map } = getState();
-        return {
-          currentLocation: map.currentLocation,
-          donors: map.donors,
-          requests: map.requests,
-        };
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch map overview");
-      }
-
-      const raw: any = await response.json();
-      const payload = raw && (raw.data ?? raw);
-
-      return {
-        currentLocation: payload.currentLocation,
-        donors: payload.donors,
-        requests: payload.requests,
-      };
-    } catch (error) {
-      const message = (error as ApiError).message || "Failed to fetch map overview";
-      return rejectWithValue(message);
-    }
+>("map/fetchMapOverview", async (_, { getState, rejectWithValue }) => {
+  const { auth, map } = getState();
+  if (!auth.accessToken) {
+    return rejectWithValue("Not authenticated");
   }
-);
+
+  const params = new URLSearchParams({
+    latitude: String(map.center.latitude),
+    longitude: String(map.center.longitude),
+    radiusKm: String(map.filters.radiusKm),
+  });
+  if (map.filters.bloodGroup) {
+    params.append("bloodGroup", map.filters.bloodGroup);
+  }
+
+  try {
+    const payload = await apiRequest<{ donors?: MapDonor[]; requests?: MapRequest[] }>(
+      `/map/overview?${params.toString()}`,
+      auth.accessToken
+    );
+    return { donors: payload.donors ?? [], requests: payload.requests ?? [] };
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : "Failed to load the map.");
+  }
+});
 
 const mapSlice = createSlice({
   name: "map",
   initialState,
   reducers: {
-    setBloodGroupFilter(state, action) {
+    setBloodGroupFilter(state, action: PayloadAction<string | null>) {
       state.filters.bloodGroup = action.payload;
     },
-    setRadiusFilter(state, action) {
+    setRadiusFilter(state, action: PayloadAction<number>) {
       state.filters.radiusKm = action.payload;
     },
-    clearFilters(state) {
-      state.filters = {
-        bloodGroup: null,
-        radiusKm: 25,
-      };
+    setLayerFilter(state, action: PayloadAction<MapLayer>) {
+      state.filters.layer = action.payload;
     },
-    setGeolocationError(state, action) {
+    setGeolocationError(state, action: PayloadAction<string | null>) {
       state.geolocationError = action.payload;
     },
-    setCurrentLocation(state, action) {
-      state.currentLocation = action.payload;
+    centerOnAdmin(state, action: PayloadAction<{ latitude: number; longitude: number }>) {
+      state.center = action.payload;
+      state.centeredOnAdmin = true;
       state.geolocationError = null;
+      if (state.filters.radiusKm === ALL_AREAS_RADIUS_KM) {
+        state.filters.radiusKm = 25;
+      }
+    },
+    resetToAllAreas(state) {
+      state.center = PAKISTAN_CENTER;
+      state.centeredOnAdmin = false;
+      state.filters.radiusKm = ALL_AREAS_RADIUS_KM;
     },
   },
   extraReducers: (builder) => {
@@ -150,32 +126,17 @@ const mapSlice = createSlice({
       })
       .addCase(fetchMapOverview.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.currentLocation = action.payload.currentLocation;
         state.donors = action.payload.donors;
         state.requests = action.payload.requests;
-        state.error = null;
       })
       .addCase(fetchMapOverview.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload || "Failed to fetch map overview";
+        state.error = action.payload ?? "Failed to load the map.";
       });
   },
 });
 
-export const {
-  setBloodGroupFilter,
-  setRadiusFilter,
-  clearFilters,
-  setGeolocationError,
-  setCurrentLocation,
-} = mapSlice.actions;
-
-export const selectMapDonors = (state: RootState) => state.map.donors;
-export const selectMapRequests = (state: RootState) => state.map.requests;
-export const selectMapCurrentLocation = (state: RootState) => state.map.currentLocation;
-export const selectMapFilters = (state: RootState) => state.map.filters;
-export const selectMapStatus = (state: RootState) => state.map.status;
-export const selectMapError = (state: RootState) => state.map.error;
-export const selectGeolocationError = (state: RootState) => state.map.geolocationError;
+export const { setBloodGroupFilter, setRadiusFilter, setLayerFilter, setGeolocationError, centerOnAdmin, resetToAllAreas } =
+  mapSlice.actions;
 
 export default mapSlice.reducer;

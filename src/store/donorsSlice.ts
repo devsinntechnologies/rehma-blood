@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { BASE_URL } from "@/contant";
+import { apiRequest } from "@/lib/api";
 import type { RootState } from "@/store/store";
 
 export type Donor = {
@@ -9,7 +10,6 @@ export type Donor = {
   phone: string;
   userId: number | null;
   bloodGroup: string;
-  passwordHash: string | null;
   isActive: boolean;
   isAvailable: boolean;
   availabilityStatus: string;
@@ -26,7 +26,7 @@ export type Donor = {
   promoCode: string | null;
   isClaimed: boolean;
   isVerifiedAccount: boolean;
-  createdByUserId: number;
+  createdByUserId: number | null;
   claimedByUserId: number | null;
   linkedUserId: number | null;
   promoCodeExpiresAt: string | null;
@@ -123,6 +123,60 @@ export const fetchDonorById = createAsyncThunk<Donor, number, { state: RootState
   }
 );
 
+export const AVAILABILITY_STATUSES = ["Available", "Not Available", "Emergency Only", "Recently Donated"] as const;
+export type AvailabilityStatus = (typeof AVAILABILITY_STATUSES)[number];
+
+type DonorAction =
+  | { type: "setActive"; isActive: boolean }
+  | { type: "setAvailability"; availabilityStatus: AvailabilityStatus }
+  | { type: "regeneratePromo" }
+  | { type: "disablePromo" };
+
+/** Runs one admin action on a donor and resolves with the updated donor record. */
+export const updateDonorAsAdmin = createAsyncThunk<
+  Donor,
+  { donorId: number; action: DonorAction },
+  { state: RootState; rejectValue: string }
+>("donors/updateDonorAsAdmin", async ({ donorId, action }, { getState, rejectWithValue }) => {
+  const token = getState().auth.accessToken;
+  if (!token) return rejectWithValue("Please sign in again.");
+
+  try {
+    switch (action.type) {
+      case "setActive":
+        return await apiRequest<Donor>(`/donors/${donorId}`, token, { method: "PATCH", body: { isActive: action.isActive } });
+      case "setAvailability":
+        return (
+          await apiRequest<{ donor: Donor }>(`/donors/${donorId}/availability-status`, token, {
+            method: "PATCH",
+            body: { availabilityStatus: action.availabilityStatus },
+          })
+        ).donor;
+      case "regeneratePromo":
+        return (await apiRequest<{ donor: Donor }>(`/donors/${donorId}/regenerate-promo`, token, { method: "PATCH" })).donor;
+      case "disablePromo":
+        return (await apiRequest<{ donor: Donor }>(`/donors/${donorId}/disable-promo`, token, { method: "PATCH" })).donor;
+    }
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : "Unable to update donor.");
+  }
+});
+
+export const deleteDonorAsAdmin = createAsyncThunk<number, number, { state: RootState; rejectValue: string }>(
+  "donors/deleteDonorAsAdmin",
+  async (donorId, { getState, rejectWithValue }) => {
+    const token = getState().auth.accessToken;
+    if (!token) return rejectWithValue("Please sign in again.");
+
+    try {
+      await apiRequest(`/donors/${donorId}`, token, { method: "DELETE" });
+      return donorId;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : "Unable to delete donor.");
+    }
+  }
+);
+
 const donorsSlice = createSlice({
   name: "donors",
   initialState,
@@ -136,7 +190,8 @@ const donorsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchDonors.pending, (state) => {
-        state.status = "loading";
+        // Keep showing the current list while a background refresh runs.
+        if (state.items.length === 0) state.status = "loading";
         state.error = null;
       })
       .addCase(fetchDonors.fulfilled, (state, action) => {
@@ -160,6 +215,20 @@ const donorsSlice = createSlice({
       .addCase(fetchDonorById.rejected, (state, action) => {
         state.selectedStatus = "failed";
         state.selectedError = action.payload ?? "Unable to load donor details.";
+      })
+      .addCase(updateDonorAsAdmin.fulfilled, (state, action) => {
+        const updated = action.payload;
+        state.items = state.items.map((donor) => (donor.id === updated.id ? { ...donor, ...updated } : donor));
+        if (state.selectedDonor?.id === updated.id) {
+          state.selectedDonor = { ...state.selectedDonor, ...updated };
+        }
+      })
+      .addCase(deleteDonorAsAdmin.fulfilled, (state, action) => {
+        state.items = state.items.filter((donor) => donor.id !== action.payload);
+        if (state.selectedDonor?.id === action.payload) {
+          state.selectedDonor = null;
+          state.selectedStatus = "idle";
+        }
       });
   },
 });
