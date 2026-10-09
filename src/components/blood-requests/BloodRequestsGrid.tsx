@@ -6,6 +6,7 @@ import { deleteBloodRequest, type ActiveBloodRequest } from "@/store/bloodReques
 import { useAppDispatch } from "@/store/hooks";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { formatRequestStatus, formatUrgency, isUrgent, requestStatusBadgeClass } from "@/lib/requestStatus";
+import { RequestTrackingPanel } from "@/components/blood-requests/RequestTrackingPanel";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString(undefined, {
@@ -89,6 +90,8 @@ function RequestDetailsDialog({ request, onClose }: { request: ActiveBloodReques
                 <div className="text-[13px] font-bold text-[var(--adm-fg-dim)] uppercase tracking-wider">Notes</div>
                 <div className="text-[15px] text-[var(--adm-fg)] leading-7">{request.notes?.trim() || "No notes provided"}</div>
               </section>
+
+              <RequestTrackingPanel requestId={request.id} />
 
               <section className="bg-[var(--adm-surface-2)] border border-[color:var(--adm-border)] rounded-[20px] p-5">
                 <div className="text-[13px] font-bold text-[var(--adm-fg-dim)] uppercase tracking-wider mb-4">Progress</div>
